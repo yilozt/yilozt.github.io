@@ -33,7 +33,7 @@ Add `# ` at start of line to hiding with rust code block:
 # }
 ```
 
-it will render to:
+it will be render to:
 
 ```rust
 # use std::ffi::c_void;
@@ -62,4 +62,4 @@ it will render to:
 # }
 ```
 
-You can click eye-btn to expand / fold the code. copy-btn will copy all code into clipboard.
+Click eye-btn to expand / fold the code. copy-btn will copy all code into clipboard.
