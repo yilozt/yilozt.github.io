@@ -46,7 +46,7 @@ relative_link: true
 future: true
 highlight:
   enable: true
-  line_number: false
+  line_number: true
   auto_detect: false
   tab_replace: ''
   wrap: true
@@ -54,7 +54,7 @@ highlight:
 prismjs:
   enable: false
   preprocess: true
-  line_number: false
+  line_number: true
   tab_replace: ''
 
 # Home page setting
