@@ -6,12 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="HandheldFriendly" content="True">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="description" content="根据 arch wiki 整理的 Anbox 安装笔记：wiki 地址：https:&#x2F;&#x2F;wiki.archlinux.org&#x2F;title&#x2F;Anbox  安装内核模块需要将内核更换为 linux-tls： sudo pacman -S linux-lts linux-lts-headerssudo grub-mkconfig -o &#x2F;boot&#x2F;grub&#x2F;grub.cfg  安装内核模块： yay">
+    <meta name="description" content="根据 arch wiki 整理的 Anbox 安装笔记：wiki 地址：https:&#x2F;&#x2F;wiki.archlinux.org&#x2F;title&#x2F;Anbox  安装内核模块需要将内核更换为 linux-tls： 12sudo pacman -S linux-lts linux-lts-headerssudo grub-mkconfig -o &#x2F;boot&#x2F;grub&#x2F;grub.cfg  安装内核模块： 1y">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Arch Linux 安装 Anbox 笔记">
 <meta property="og:url" content="https://yilozt.github.io/2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/index.html">
 <meta property="og:site_name" content="笔记本">
-<meta property="og:description" content="根据 arch wiki 整理的 Anbox 安装笔记：wiki 地址：https:&#x2F;&#x2F;wiki.archlinux.org&#x2F;title&#x2F;Anbox  安装内核模块需要将内核更换为 linux-tls： sudo pacman -S linux-lts linux-lts-headerssudo grub-mkconfig -o &#x2F;boot&#x2F;grub&#x2F;grub.cfg  安装内核模块： yay">
+<meta property="og:description" content="根据 arch wiki 整理的 Anbox 安装笔记：wiki 地址：https:&#x2F;&#x2F;wiki.archlinux.org&#x2F;title&#x2F;Anbox  安装内核模块需要将内核更换为 linux-tls： 12sudo pacman -S linux-lts linux-lts-headerssudo grub-mkconfig -o &#x2F;boot&#x2F;grub&#x2F;grub.cfg  安装内核模块： 1y">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://yilozt.github.io/2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/arm-res.png">
 <meta property="og:image" content="https://yilozt.github.io/2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/qv2ray-setting.png">
@@ -167,67 +167,67 @@
 <p>根据 arch wiki 整理的 Anbox 安装笔记：<br>wiki 地址：<a target="_blank" rel="noopener" href="https://wiki.archlinux.org/title/Anbox">https://wiki.archlinux.org/title/Anbox</a></p>
 </blockquote>
 <h2 id="安装内核模块"><a href="#安装内核模块" class="headerlink" title="安装内核模块"></a>安装内核模块</h2><p>需要将内核更换为 <code>linux-tls</code>：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo pacman -S linux-lts linux-lts-headers</span><br><span class="line">sudo grub-mkconfig -o /boot/grub/grub.cfg</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S linux-lts linux-lts-headers</span><br><span class="line">sudo grub-mkconfig -o /boot/grub/grub.cfg</span><br></pre></td></tr></table></figure>
 
 <p>安装内核模块：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yay -S anbox-modules-dkms</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yay -S anbox-modules-dkms</span><br></pre></td></tr></table></figure>
 
 <p>加载内核模块：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo modprobe binder_linux devices=binder,hwbinder,vndbinder,anbox-binder,anbox-hwbinder,anbox-vndbinder</span><br><span class="line">sudo modprobe ashmem_linux</span><br><span class="line">sudo mkdir -p /dev/binderfs</span><br><span class="line">sudo mount -t binder binder /dev/binderfs</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo modprobe binder_linux devices=binder,hwbinder,vndbinder,anbox-binder,anbox-hwbinder,anbox-vndbinder</span><br><span class="line">sudo modprobe ashmem_linux</span><br><span class="line">sudo mkdir -p /dev/binderfs</span><br><span class="line">sudo mount -t binder binder /dev/binderfs</span><br></pre></td></tr></table></figure>
 
 <p>编辑 <code>/etc/modules-load.d/anbox.conf</code>，以便开机时启用内核模块：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ashmem_linux</span><br><span class="line">binder_linux</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ashmem_linux</span><br><span class="line">binder_linux</span><br></pre></td></tr></table></figure>
 
 <p>编辑<code>/etc/tmpfiles.d/anbox.conf</code>，下面的文件，以便开机时挂载 <code>binderfs</code>：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># /etc/tmpfiles.d/anbox.conf</span></span><br><span class="line">d! /dev/binderfs 0755 root root</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/tmpfiles.d/anbox.conf</span></span><br><span class="line">d! /dev/binderfs 0755 root root</span><br></pre></td></tr></table></figure>
 
 <p>在 <code>/etc/fstab</code> 末尾添加：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">none                         /dev/binderfs binder   nofail  0      0</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">none                         /dev/binderfs binder   nofail  0      0</span><br></pre></td></tr></table></figure>
 
 <h2 id="安装-anbox"><a href="#安装-anbox" class="headerlink" title="安装 anbox"></a>安装 anbox</h2><p>使用 <code>Archlinuxcn</code> 源安装：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo pacman -S anbox-git anbox-image</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S anbox-git anbox-image</span><br></pre></td></tr></table></figure>
 
 <p>设置网络。我电脑上使用 <code>NetworkManager</code> 作为网络管理，因此只需要这样就完成 Anbox 的网络配置了：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">nmcli con add <span class="built_in">type</span> bridge ifname anbox0 -- connection.id anbox-net ipv4.method shared ipv4.addresses 192.168.250.1/24</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmcli con add <span class="built_in">type</span> bridge ifname anbox0 -- connection.id anbox-net ipv4.method shared ipv4.addresses 192.168.250.1/24</span><br></pre></td></tr></table></figure>
 
 <p>这里只需要执行一次，以后开机时，NetworkManger 会自动配置网络。 其他配置网络的方法自行参考 Arch Wiki。</p>
 <p>启用服务：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo systemctl start anbox-container-manager.service  <span class="comment"># 启动</span></span><br><span class="line">sudo systemctl <span class="built_in">enable</span> anbox-container-manager.service <span class="comment"># 设置开机启动</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl start anbox-container-manager.service  <span class="comment"># 启动</span></span><br><span class="line">sudo systemctl <span class="built_in">enable</span> anbox-container-manager.service <span class="comment"># 设置开机启动</span></span><br></pre></td></tr></table></figure>
 
 <p>检查 Anbox 状态，如果显示为 running，那应该没什么太大的问题了：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo systemctl status anbox-container-manager.service</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl status anbox-container-manager.service</span><br></pre></td></tr></table></figure>
 
 <p>这时候从桌面的 Anbox 图标点进去就能看到 Anbox 的界面了。</p>
 <h2 id="安装应用"><a href="#安装应用" class="headerlink" title="安装应用"></a>安装应用</h2><p>需要确保 <code>adb</code> 命令存在：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sudo pacman -S android-tools</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S android-tools</span><br></pre></td></tr></table></figure>
 
 <p>之后使用 <code>adb install</code> 就可以安装 app 了：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">adb install /path/to/app.apk</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb install /path/to/app.apk</span><br></pre></td></tr></table></figure>
 
 <h2 id="ARM-支持"><a href="#ARM-支持" class="headerlink" title="ARM 支持"></a>ARM 支持</h2><p>目前没看出来有多大用，一些 ARM 构架的 apk 是能安装，但启动不了。</p>
 <h3 id="安装前准备"><a href="#安装前准备" class="headerlink" title="安装前准备"></a>安装前准备</h3><p>先安装一些依赖：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo pacman -S squashfs-tools tar unzip curl wget lzip </span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S squashfs-tools tar unzip curl wget lzip </span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>接下来的内容在将来可能会过时，建议参考原项目的地址：<a target="_blank" rel="noopener" href="https://github.com/geeks-r-us/anbox-playstore-installer">https://github.com/geeks-r-us/anbox-playstore-installer</a></p>
 </blockquote>
 <p>ARM 的安装脚本在 Arch 上并不能直接使用，在此之前需要进行手动干预。需要手动修改 <code>/usr/lib/systemd/system/anbox-container-manager.service</code> 文件，在 <code>ExecStart</code> 这一行的末尾加上 <code> --use-rootfs-overlay</code>，修改后的文件大概长这样：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Anbox Container Manager</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Anbox Container Manager</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">ExecStart=/usr/bin/anbox container-manager --daemon --privileged --data-path=/var/lib/anbox --use-rootfs-overlay</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
 
 <p>然后重启 Anbox 服务：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart anbox-container-manager.service</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart anbox-container-manager.service</span><br></pre></td></tr></table></figure>
 
 <h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>接下来只需要下载脚本，运行就行，这个过程需要下载一些文件，可能需要翻越 GFW：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mkdir a</span><br><span class="line"><span class="built_in">cd</span> a</span><br><span class="line">wget https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh</span><br><span class="line">chmod +x install-playstore.sh</span><br><span class="line">./install-playstore.sh</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir a</span><br><span class="line"><span class="built_in">cd</span> a</span><br><span class="line">wget https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh</span><br><span class="line">chmod +x install-playstore.sh</span><br><span class="line">./install-playstore.sh</span><br></pre></td></tr></table></figure>
 
 <p>没问题的话，打开 Anbox 应该就能发现多了一个 Google 引用市场，arm 构架的 apk 也能成功安装。</p>
 <p><img src="./arm-res.png" alt="arm-res"></p>
 <h2 id="代理设置"><a href="#代理设置" class="headerlink" title="代理设置"></a>代理设置</h2><h3 id="设置代理"><a href="#设置代理" class="headerlink" title="设置代理"></a>设置代理</h3><p>主机使用的是 Qv2ray进行代理，它默认监听 127.0.0.1 ，此时 anbox 是不能访问电脑上的代理服务器的。解决办法也很简单，在主界面点击<code>首选项</code>，将<code>入站设置</code>里的<code>监听地址</code>改成 0.0.0.0 就行了：</p>
 <p><img src="./qv2ray-setting.png" alt="qv2ray-setting.png"></p>
 <p>现在通过 adb 设置代理应该就没有问题了：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb shell settings put global http_proxy &lt;ip&gt;:&lt;port&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb shell settings put global http_proxy &lt;ip&gt;:&lt;port&gt;</span><br></pre></td></tr></table></figure>
 <p><img src="./result.png" alt="result.png"></p>
-<h3 id="取消代理"><a href="#取消代理" class="headerlink" title="取消代理"></a>取消代理</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb shell settings put global http_proxy :0</span><br></pre></td></tr></table></figure>
+<h3 id="取消代理"><a href="#取消代理" class="headerlink" title="取消代理"></a>取消代理</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adb shell settings put global http_proxy :0</span><br></pre></td></tr></table></figure>
   </div>
 </article>
 
