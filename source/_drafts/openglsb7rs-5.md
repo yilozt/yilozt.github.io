@@ -2,7 +2,9 @@
 title: OpenGL超级宝典第七版学习笔记 (5)：数据
 tags: OpenGL
 categories: 学习笔记
+date: 2022-01-23 13:35:55
 ---
+
 
 - 如何创建 缓冲区对象（buffer） 和 纹理（texture），用来存储数据
 - 如何让 OpenGL 自动填充顶点属性
@@ -1205,4 +1207,235 @@ location = offset + n * stride + relativeoffset
 # fn main() {
 #   App::default().run()
 # }
+```
+
+### Uniform 变量
+
+- 可以在应用程序内将数据直接传递给 shader
+
+在 shader 里声明 uniform 变量：
+
+```glsl
+uniform float time;
+uniform int index;
+uniform vec4 color;
+uniform mat4 vpmat;
+```
+
+uniform 变量需要在 C++ / Rust 代码里传入数据，glsl 内不能对 uniform 变量赋值。
+
+但是可以在声明的时候可以赋初值：
+
+```glsl
+uniform float a = 12;
+```
+
+### 向 uniform 变量传递数据
+
+调用 `glGetUniformLocation()`  查询 uniform 变量的位置，之后就可调用一系列 `glUniform*` 函数来给 uniform 变量传递数据：
+
+`glUniform*` 函数的原型，完整：[glUniform](/gl4/glUniform)
+ 
+```c
+void glUniform1f(GLint location,
+                 GLfloat v0);
+void glUniform2f(GLint location,
+                 GLfloat v0,
+                 GLfloat v1);
+...
+```
+
+这里的 location 参数需要调用 `glGetUniformLocation` 来查询：
+
+```c
+GLint glGetUniformLocation(GLuint program,
+                           const GLchar *name);
+```
+
+glsl定义 uniform 变量：
+
+```glsl
+uniform float time;
+uniform vec3 offset;
+```
+
+在 Rust 里给这两个 uniform 变量赋值：
+
+```rust
+let name = CString::new("time").unwrap();
+let ltime = gl::GetUniformLocation(program, name.as_ptr());
+gl::Uniform1f(ltime, 1.0);
+
+let name = CString::new("offset").unwrap();
+let loffset = gl::GetUniformLocation(program, name.as_ptr());
+gl::Uniform3f(loffset, 1.0, 2.0, 3.0);
+```
+
+也可以在 glsl 里指定 uniform 变量的 location:
+
+```glsl
+layout (location = 0) uniform float time;
+layout (location = 1) uniform int index;
+layout (location = 2) uniform vec4 color;
+layout (location = 3) uniform bool flag;
+```
+
+传递数据：
+
+```rust
+gl::Uniform1f(0, 1.0);
+gl::Uniform1i(1, 2);
+gl::Uniform3f(2, 3.0, 4.0, 5.0);
+gl::Uniform1i(3, gl::FALSE);
+```
+
+`glUniform*()` 有一组以 `v` 作为后缀的函数，可以传入指向数据的指针：
+
+```c
+void glUniform3fv(GLint location,
+                  GLsizei count,
+                  const GLfloat *value);
+void glUniform4fv(GLint location,
+                  GLsizei count,
+                  const GLfloat *value);
+```
+
+给 vec4 变量传递数据：
+
+```glsl glsl:
+uniform vec4 vcolor;
+```
+
+```rust rust:
+let vcolor = [1.0, 1.0, 1.0, 1.0];
+gl::Uniform4fv(vcolor_location, 1, vcolor.as_ptr());
+```
+
+给 vec4数组传递数据：
+
+```glsl glsl, 顶点着色器:
+# #version 460 core
+# layout (location = 0) in vec3 position;
+# out vec4 vs_color;
+# 
+uniform vec4 colors[3];
+# 
+# void main() {
+#   gl_Position = vec4(position, 1.0);
+#   vs_color = colors[gl_VertexID];
+# }
+```
+
+```rust rust:
+# use gl::types::GLuint;
+# use sb7::application::Application;
+# use std::ffi::{c_void, CString};
+# use std::mem::{size_of_val, size_of};
+# use std::ptr::null;
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: GLuint,
+#   buf: GLuint,
+#   program: GLuint
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let positions = [ -0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0f32,];
+# 
+#     unsafe {
+#       let mut vao = 0;
+#       gl::CreateVertexArrays(1, &mut vao);
+#       
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       
+#       gl::NamedBufferStorage(buf, size_of_val(&positions) as isize,
+#                             positions.as_ptr() as *const c_void,
+#                             gl::DYNAMIC_STORAGE_BIT);
+#       gl::VertexArrayVertexBuffer(vao, 0, buf, 0,
+#                                     size_of::<[f32; 3]>() as i32);
+#       gl::VertexArrayAttribFormat(vao, 0, 3, gl::FLOAT, gl::FALSE, 0);
+#       gl::VertexArrayAttribBinding(vao, 0, 0);
+#       gl::EnableVertexArrayAttrib(vao, 0);
+# 
+#       let vs_source = CString::new("
+#         #version 460 core
+#         layout (location = 0) in vec3 position;
+#         out vec4 vs_color;
+# 
+#         uniform vec4 colors[3];
+# 
+#         void main() {
+#           gl_Position = vec4(position, 1.0);
+#           vs_color = colors[gl_VertexID];
+#         }
+#       ").unwrap();
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_source.as_ptr(), null());
+#       gl::CompileShader(vs);
+#         
+#       let fs_source = CString::new("
+#         #version 460 core
+#         in vec4 vs_color;
+#         out vec4 fs_color;
+# 
+#         void main() {
+#           fs_color = vs_color;
+#         }
+#       ").unwrap();
+#       let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs, 1, &fs_source.as_ptr(), null());
+#       gl::CompileShader(fs);
+# 
+#       let program = gl::CreateProgram();
+#       gl::AttachShader(program, vs);
+#       gl::AttachShader(program, fs);
+#       gl::LinkProgram(program);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs);
+# 
+#       gl::UseProgram(program);
+# 
+#       *self = Self { vao, program, buf };
+# 
+#       gl::BindVertexArray(vao);
+# 
+      let colors = [[0.0, 0.0, 1.0, 1.0],
+                    [0.0, 1.0, 0.0, 1.0],
+                    [1.0, 0.0, 0.0, 1.0f32],];
+#       let name = CString::new("colors").unwrap();
+#       let colors_location = gl::GetUniformLocation(program, name.as_ptr());
+      gl::Uniform4fv(colors_location, 3, colors.as_ptr() as *const f32);
+#       
+#     }
+#   }
+# 
+#   fn render(&self, _current_time: f64) {
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0f32].as_ptr());
+#       gl::DrawArrays(gl::TRIANGLES, 0, 3);
+#     }
+#   }
+# 
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteBuffers(2, &self.buf);
+#       gl::DeleteProgram(self.program);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+传一维数据：
+
+```rust
+let data = 1.0f32;
+gl::Uniform1fv(data_location, 1, &data);
 ```
