@@ -41,7 +41,7 @@ render_drafts: false
 post_asset_folder: true
 marked:
   prependRoot: true
-  postAsset: true
+  postAsset: false
 relative_link: true
 future: true
 highlight:

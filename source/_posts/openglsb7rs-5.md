@@ -6,6 +6,7 @@ date: 2022-01-23 13:35:55
 ---
 
 
+
 - 如何创建 缓冲区对象（buffer） 和 纹理（texture），用来存储数据
 - 如何让 OpenGL 自动填充顶点属性
 - 如何从 shader 访问 buffer 和 texture 的数据
@@ -1439,3 +1440,645 @@ uniform vec4 colors[3];
 let data = 1.0f32;
 gl::Uniform1fv(data_location, 1, &data);
 ```
+
+传递矩阵：
+
+```glsl 顶点着色器:
+# #version 460 core
+# layout (location = 0) in vec3 position;
+# layout (location = 1) in vec3 color;
+# 
+uniform mat4 mv_mat = mat4(1.0);
+# 
+# out vec4 vs_color;
+# 
+# void main() {
+#   gl_Position = mv_mat * vec4(position, 1.0);
+#   vs_color = vec4(color, 1.0);
+# }
+```
+
+```rust rust:
+# use gl::types::GLuint;
+# use sb7::application::Application;
+# use sb7::vmath::rotate;
+# use std::ffi::{c_void, CString};
+# use std::mem::{size_of_val, size_of};
+# use std::ptr::{null, addr_of};
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: GLuint,
+#   buf: GLuint,
+#   program: GLuint
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     #[allow(dead_code)]
+#     struct Vertex {
+#       x: f32, y: f32, z: f32, // position
+#       r: f32, g: f32, b: f32, // color
+#     }
+# 
+#     let vertices = [
+#       Vertex { x: -0.5, y: -0.5, z: 0.0, r: 1.0, g: 0.0, b: 0.0 },
+#       Vertex { x:  0.5, y: -0.5, z: 0.0, r: 0.0, g: 1.0, b: 0.0 },
+#       Vertex { x:  0.0, y:  0.5, z: 0.0, r: 0.0, g: 0.0, b: 1.0 },
+#     ];
+#   
+#     unsafe {
+#       let mut vao = 0;
+#       gl::CreateVertexArrays(1, &mut vao);
+#       
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       
+#       gl::NamedBufferStorage(buf, size_of_val(&vertices) as isize,
+#                             vertices.as_ptr() as *const c_void,
+#                             gl::DYNAMIC_STORAGE_BIT);
+#       gl::VertexArrayVertexBuffer(vao, 0, buf, 0, size_of::<Vertex>() as i32);
+#       gl::VertexArrayAttribFormat(vao, 0, 3, gl::FLOAT, gl::FALSE, 0);
+#       gl::VertexArrayAttribFormat(vao, 1, 3, gl::FLOAT, gl::FALSE, 3 * size_of::<f32>() as u32);
+#       gl::VertexArrayAttribBinding(vao, 0, 0);
+#       gl::VertexArrayAttribBinding(vao, 1, 0);
+#       gl::EnableVertexArrayAttrib(vao, 0);
+#       gl::EnableVertexArrayAttrib(vao, 1);
+# 
+#       let vs_source = CString::new("
+#         #version 460 core
+#         layout (location = 0) in vec3 position;
+#         layout (location = 1) in vec3 color;
+# 
+#         uniform mat4 mv_mat = mat4(1.0);
+# 
+#         out vec4 vs_color;
+# 
+#         void main() {
+#           gl_Position = mv_mat * vec4(position, 1.0);
+#           vs_color = vec4(color, 1.0);
+#         }
+#       ").unwrap();
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_source.as_ptr(), null());
+#       gl::CompileShader(vs);
+#         
+#       let fs_source = CString::new("
+#         #version 460 core
+#         in vec4 vs_color;
+#         out vec4 fs_color;
+# 
+#         void main() {
+#           fs_color = vs_color;
+#         }
+#       ").unwrap();
+#       let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs, 1, &fs_source.as_ptr(), null());
+#       gl::CompileShader(fs);
+# 
+#       let program = gl::CreateProgram();
+#       gl::AttachShader(program, vs);
+#       gl::AttachShader(program, fs);
+#       gl::LinkProgram(program);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs);
+# 
+#       gl::UseProgram(program);
+# 
+#       *self = Self { vao, program, buf };
+# 
+#       gl::BindVertexArray(vao);
+#     }
+#   }
+# 
+#   fn render(&self, _current_time: f64) {
+#     unsafe {
+      let mv_mat = rotate(0.0, _current_time as f32 * 45.0, 0.0);
+#       let name = CString::new("mv_mat").unwrap();
+#       let location_mv_mat = gl::GetUniformLocation(self.program,
+#                                                    name.as_ptr() as _);
+      gl::UniformMatrix4fv(location_mv_mat, 1,
+                           gl::FALSE, addr_of!(mv_mat) as _);
+# 
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0f32].as_ptr());
+#       gl::DrawArrays(gl::TRIANGLES, 0, 3);
+#     }
+#   }
+# 
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteBuffers(2, &self.buf);
+#       gl::DeleteProgram(self.program);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+对应的效果如下：
+
+{% raw %}
+<canvas id="uniform_mat"></canvas>
+<script src="/js/openglsb7th/ch5/uniform_mat.js"></script>
+{% endraw %}
+
+#### 通过 uniform 变量设置变换矩阵
+
+初始化顶点数据：
+
+```rust
+# use gl::types::*;
+# use sb7::application::{Application, AppConfig};
+# use sb7::mat4;
+# use sb7::vmath::{Mat4, translate, rotate_with_axis};
+# use std::ffi::CString;
+# use std::mem::size_of_val;
+# use std::ptr::{null, addr_of};
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: GLuint,
+#   buf: GLuint,
+#   program: GLuint,
+#   proj_matrix: Mat4,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     #[rustfmt::skip]
+    let vertex_position : &[f32]= &[
+      -0.25,  0.25, -0.25,
+      -0.25, -0.25, -0.25,
+       0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#       -0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#        0.25, -0.25,  0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25, -0.25,  0.25,
+# 
+#       -0.25,  0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#        0.25,  0.25,  0.25,
+# 
+      // ...
+       0.25,  0.25,  0.25,
+      -0.25,  0.25,  0.25,
+      -0.25,  0.25, -0.25
+    ];
+# 
+#     unsafe {
+      let mut vao = 0;
+      gl::CreateVertexArrays(1, &mut vao);
+      gl::BindVertexArray(vao);
+
+      let mut buf = 0;
+      gl::CreateBuffers(1, &mut buf);
+      gl::BindBuffer(gl::ARRAY_BUFFER, buf);
+      gl::NamedBufferData(buf,
+                          size_of_val(vertex_position) as _,
+                          vertex_position.as_ptr() as _,
+                          gl::STATIC_DRAW);
+      gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+      gl::EnableVertexArrayAttrib(vao, 0);
+# 
+#       let vs_source = CString::new("
+#         #version 460 core
+# 
+#         in vec4 position;
+#         
+#         out VS_OUT {
+#           vec4 color;
+#         } vs_out;
+# 
+#         layout (location = 0) uniform mat4 mv_matrix = mat4(1.0);
+#         layout (location = 1) uniform mat4 proj_matrix = mat4(1.0);
+# 
+#         void main() {
+#           gl_Position =  proj_matrix * mv_matrix * position;
+#           vs_out.color = position * 2.0 + vec4(0.5, 0.5, 0.5, 0.0);
+#         }
+#       ").unwrap();
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_source.as_ptr(), null());
+#       gl::CompileShader(vs);
+#         
+#       let fs_source = CString::new("
+#         #version 460 core
+# 
+#         out vec4 color;
+#         
+#         in VS_OUT {
+#           vec4 color;
+#         } fs_in;
+# 
+#         void main() {
+#           color = fs_in.color;
+#         }
+#       ").unwrap();
+#       let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs, 1, &fs_source.as_ptr(), null());
+#       gl::CompileShader(fs);
+# 
+#       let program = gl::CreateProgram();
+#       gl::AttachShader(program, vs);
+#       gl::AttachShader(program, fs);
+#       gl::LinkProgram(program);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs);
+# 
+#       gl::UseProgram(program);
+# 
+#       gl::Enable(gl::DEPTH_TEST);
+#       *self = Self { vao, program, buf, proj_matrix: mat4!() };
+#     }
+# 
+#     let AppConfig { width, height, .. } = AppConfig::default();
+#     self.on_resize(width as _, height as _);
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     unsafe {
+#       let current_time = current_time as f32;
+#       let f = current_time * 0.3;
+#       let mv_matrix = translate(0.0, 0.0, -4.0) *
+#                       translate((2.1 * f).sin() * 0.5,
+#                                 (1.7 * f).cos() * 0.5,
+#                                 (1.3 * f).sin() * (1.5 * f).cos() * 2.0) *
+#                       rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0) *
+#                       rotate_with_axis(current_time * 81.0, 1.0, 0.0, 0.0);
+#       gl::UniformMatrix4fv(0, 1, gl::FALSE, addr_of!(mv_matrix) as _);
+#       
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let aspect = w as GLfloat / h as GLfloat;
+#     self.proj_matrix = sb7::vmath::perspective(50.0, aspect, 0.1, 1000.0);
+#     unsafe {
+#       gl::UniformMatrix4fv(1, 1, gl::FALSE, addr_of!(self.proj_matrix) as _);
+#     }
+#   }
+# 
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteBuffers(2, &self.buf);
+#       gl::DeleteProgram(self.program);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+设置变换矩阵：
+
+```rust
+# ...
+#   fn render(&self, current_time: f64) {
+#     unsafe {
+#       let current_time = current_time as f32;
+      let f = current_time * 0.3;
+      let mv_matrix = translate(0.0, 0.0, -4.0) *
+                      translate((2.1 * f).sin() * 0.5,
+                                (1.7 * f).cos() * 0.5,
+                                (1.3 * f).sin() * (1.5 * f).cos() * 2.0) *
+                      rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0) *
+                      rotate_with_axis(current_time * 81.0, 1.0, 0.0, 0.0);
+#       gl::UniformMatrix4fv(0, 1, gl::FALSE, addr_of!(mv_matrix) as _);
+#       
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# ...
+```
+
+在窗口大小发生改变时，更新投影矩阵：
+
+```rust
+# ...
+  fn on_resize(&mut self, w: i32, h: i32) {
+    let aspect = w as GLfloat / h as GLfloat;
+    self.proj_matrix = sb7::vmath::perspective(50.0, aspect, 0.1, 1000.0);
+#     unsafe {
+#       gl::UniformMatrix4fv(1, 1, gl::FALSE, addr_of!(self.proj_matrix) as _);
+#     }
+  }
+# ...
+```
+
+将变换矩阵和投影矩阵传递到shader里：
+
+```rust
+# impl Application for App {
+#   fn startup(&mut self) {
+#       // ...
+#     self.on_resize(width as _, height as _);
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     unsafe {
+#       let current_time = current_time as f32;
+#       let f = current_time * 0.3;
+#       let mv_matrix = translate(0.0, 0.0, -4.0) *
+#                       translate((2.1 * f).sin() * 0.5,
+#                                 (1.7 * f).cos() * 0.5,
+#                                 (1.3 * f).sin() * (1.5 * f).cos() * 2.0) *
+#                       rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0) *
+#                       rotate_with_axis(current_time * 81.0, 1.0, 0.0, 0.0);
+      gl::UniformMatrix4fv(0, 1, gl::FALSE, addr_of!(mv_matrix) as _);
+#       
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let aspect = w as GLfloat / h as GLfloat;
+#     self.proj_matrix = sb7::vmath::perspective(50.0, aspect, 0.1, 1000.0);
+#     unsafe {
+      gl::UniformMatrix4fv(1, 1, gl::FALSE, addr_of!(self.proj_matrix) as _);
+#     }
+#   }
+# 
+#   fn shutdown(&self) {
+#       // ...
+#   }
+# }
+```
+
+顶点着色器：
+
+```glsl
+#version 460 core
+
+in vec4 position;
+
+out VS_OUT {
+  vec4 color;
+} vs_out;
+
+layout (location = 0) uniform mat4 mv_matrix = mat4(1.0);
+layout (location = 1) uniform mat4 proj_matrix = mat4(1.0);
+
+void main() {
+  gl_Position =  proj_matrix * mv_matrix * position;
+  vs_out.color = position * 2.0 + vec4(0.5, 0.5, 0.5, 0.0);
+}
+```
+
+片段着色器：
+
+```glsl
+#version 460 core
+
+out vec4 color;
+
+in VS_OUT {
+  vec4 color;
+} fs_in;
+
+void main() {
+  color = fs_in.color;
+}
+```
+
+{% raw %}
+<canvas id="spinningcube"></canvas>
+<script src="/js/openglsb7th/ch5/spinningcube.js"></script>
+{% endraw %}
+
+绘制多个物体：在 render 函数里多次调用 `glDrawArray` 就行：
+
+```rust
+# use gl::types::*;
+# use sb7::application::{Application, AppConfig};
+# use sb7::mat4;
+# use sb7::vmath::{Mat4, translate, rotate_with_axis};
+# use std::ffi::CString;
+# use std::mem::size_of_val;
+# use std::ptr::{null, addr_of};
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: GLuint,
+#   buf: GLuint,
+#   program: GLuint,
+#   proj_matrix: Mat4,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     #[rustfmt::skip]
+#     let vertex_position : &[f32]= &[
+#       -0.25,  0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#       -0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#        0.25, -0.25,  0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25, -0.25,  0.25,
+# 
+#       -0.25,  0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#        0.25,  0.25,  0.25,
+# 
+#        0.25,  0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#       -0.25,  0.25, -0.25
+#     ];
+# 
+#     unsafe {
+#       let mut vao = 0;
+#       gl::CreateVertexArrays(1, &mut vao);
+#       gl::BindVertexArray(vao);
+# 
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       gl::BindBuffer(gl::ARRAY_BUFFER, buf);
+#       gl::NamedBufferData(buf,
+#                           size_of_val(vertex_position) as _,
+#                           vertex_position.as_ptr() as _,
+#                           gl::STATIC_DRAW);
+#       gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, null());
+#       gl::EnableVertexArrayAttrib(vao, 0);
+# 
+#       let vs_source = CString::new("
+#         #version 460 core
+# 
+#         in vec4 position;
+#         
+#         out VS_OUT {
+#           vec4 color;
+#         } vs_out;
+# 
+#         layout (location = 0) uniform mat4 mv_matrix = mat4(1.0);
+#         layout (location = 1) uniform mat4 proj_matrix = mat4(1.0);
+# 
+#         void main() {
+#           gl_Position =  proj_matrix * mv_matrix * position;
+#           vs_out.color = position * 2.0 + vec4(0.5, 0.5, 0.5, 0.0);
+#         }
+#       ").unwrap();
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_source.as_ptr(), null());
+#       gl::CompileShader(vs);
+#         
+#       let fs_source = CString::new("
+#         #version 460 core
+# 
+#         out vec4 color;
+#         
+#         in VS_OUT {
+#           vec4 color;
+#         } fs_in;
+# 
+#         void main() {
+#           color = fs_in.color;
+#         }
+#       ").unwrap();
+#       let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs, 1, &fs_source.as_ptr(), null());
+#       gl::CompileShader(fs);
+# 
+#       let program = gl::CreateProgram();
+#       gl::AttachShader(program, vs);
+#       gl::AttachShader(program, fs);
+#       gl::LinkProgram(program);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs);
+# 
+      gl::UseProgram(program);
+# 
+#       gl::Enable(gl::DEPTH_TEST);
+#       *self = Self { vao, program, buf, proj_matrix: mat4!() };
+#     }
+# 
+#     let AppConfig { width, height, .. } = AppConfig::default();
+#     self.on_resize(width as _, height as _);
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
+# 
+      let current_time = current_time as f32;
+# 
+      for i in 0..24 {
+        let f = i as f32 + current_time * 0.3;
+
+        let mv_matrix = translate(0.0, 0.0, -6.0)
+             * rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0)
+             * rotate_with_axis(current_time * 21.0, 1.0, 0.0, 0.0)
+             * translate((2.1 * f).sin() * 2.0,
+                         (1.7 * f).cos() * 2.0,
+                         (1.3 * f).sin() * (1.5 * f).cos() * 2.0);
+        gl::UniformMatrix4fv(0, 1, gl::FALSE, addr_of!(mv_matrix) as _);
+
+        gl::DrawArrays(gl::TRIANGLES, 0, 36);
+      }
+#     }
+#   }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let aspect = w as GLfloat / h as GLfloat;
+#     self.proj_matrix = sb7::vmath::perspective(50.0, aspect, 0.1, 1000.0);
+#     unsafe {
+#       gl::UniformMatrix4fv(1, 1, gl::FALSE, addr_of!(self.proj_matrix) as _);
+#     }
+#   }
+# 
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteBuffers(2, &self.buf);
+#       gl::DeleteProgram(self.program);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+
+```
+
+{% raw %}
+<canvas id="spinningcubes"></canvas>
+<script src="/js/openglsb7th/ch5/spinningcubes.js"></script>
+{% endraw %}
