@@ -58,7 +58,7 @@
 		</script>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
 	
-<meta name="generator" content="Hexo 5.4.0"></head>
+<meta name="generator" content="Hexo 5.4.1"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -83,6 +83,8 @@
     <br/>
     <span id="actions">
       <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="../../23/openglsb7rs-5/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
         
         
         <li><a class="icon" aria-label="下一篇" href="../../../../2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
@@ -293,7 +295,8 @@
     'use strict';
     const langs = ['rust', 'glsl'].map(l => '.highlight.' + l + ' .btn-copy').join(',');
 
-    const lines = {};
+    const lines_to_hide = {};
+
     // hiding-code HTML
     const eye_btn = "<span class=\"btn-eye tooltipped tooltipped-sw\" aria-label=\"expand\">"
                 + '  <i class="far fa-eye"></i>';
@@ -347,25 +350,25 @@
         $("#" + id).remove();
       } else {
         // add index
-        lines[id] = spans;
+        lines_to_hide[id] = spans;
         spans.forEach(t => t.hide());
       }
     }
     $('.code').addClass('show');
 
     // handle click event
-    for ( let id in lines) {
+    for ( let id in lines_to_hide) {
       const btn = $("#" + id);
       const icon = btn.find("i");
       btn.on("click", (e) => {
         if (icon.hasClass("fa-eye-slash")) {
           // hide lines
-          lines[id].forEach(t => t.fadeOut());
+          lines_to_hide[id].forEach(t => t.fadeOut());
           btn.attr("aria-label", "expand");
           icon.removeClass("fa-eye-slash");
         } else {
           // show lines
-          lines[id].forEach(t => t.fadeIn());
+          lines_to_hide[id].forEach(t => t.fadeIn());
           btn.attr("aria-label", "fold");
           icon.addClass("fa-eye-slash");
         }
@@ -391,5 +394,10 @@
 
 <!-- utterances Comments -->
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/scrollReveal.js/4.0.9/scrollreveal.min.js" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+crossorigin="anonymous" defer></script>
 </body>
 </html>
