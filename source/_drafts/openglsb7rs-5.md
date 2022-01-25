@@ -2154,19 +2154,362 @@ gl_Position =  transforms[0].projection_matrix * vec4(0.0);
     - vec2 的存储位置与 2 * 4 = 8 字节对齐
   - 数据类型的大小 N 字节，三维、四维向量与 4 * N 字节对齐
     - vec3, vec4 的存储位置与 16字节对齐
-  - 数组：数组存储位置的起始位置遵循以上规则，但是之后会向上取整到 4 * N 字节
-  
+  - 数组：每个元素和 4 * N 字节对齐
+
+参考：[OpenGL 4.6规范](https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf) `7.6.2.2 Standard Uniform Block Layout`
+
+使用标准布局：在 uniform 关键字前加上 `layout(std140)`进行修饰
+
+```glsl
+layout(std140) uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} transforms;
+```
+
+内存布局如下：
+
+- scale 的起始位置为 0 字节，占用 4 字节
+- translation：类型为 vec3，与 16 字节对齐，因此起始位置为 16 字节，占用 4 * 3 = 12 字节
+- rotate：每个元素与 16 字节对齐：
+  - rotate[0]：起始位置为 32 字节
+  - rotate[1]：起始位置为 48 字节
+  - rotate[2]：起始位置为 64 字节
+- mat4：可以看成 vec4 数组，每个元素与 16 字节对齐
+
+可以设置 uniform 块内部成员的偏移量：
+
+```glsl
+layout(std140) uniform ManuallyLaidOutBlock {
+  layout (offset = 8) vec2 bar;
+  layout (offset = 32) vec3 foo;
+  layout (offset = 48) vec3 baz;
+} myBlock;
+```
+
+指定成员的对齐位置时，成员的起始位置要满足上面的规则，如果不满足的话 shader 会编译失败：
+
+```glsl shader:
+# #version 460 core
+layout(std140) uniform ManuallyLaidOutBlock {
+  layout (offset = 7) vec2 bar;
+  layout (offset = 15) vec3 foo;
+  layout (offset = 48) vec3 baz;
+} myBlock;
+# void main() { }
+```
+```txt 错误输出
+== 0:3(27): error: layout qualifier offset must be a multiple of the base alignment of vec2
+== 0:4(28): error: layout qualifier offset must be a multiple of the base alignment of vec3
+== 0:6(4): error: invalid qualifier xfb_offset=7 must be a multiple of the first component size of the first qualified variable or block member. Or double if an aggregate that contains a double (4).
+== 0:6(4): error: invalid qualifier xfb_offset=15 must be a multiple of the first component size of the first qualified variable or block member. Or double if an aggregate that contains a double (4).
+```
+
+成员的顺序也很重要，前一个成员的内存位置必须小于后一个成员的位置：
+
+```glsl shader
+# #version 460 core
+layout(std140) uniform ManuallyLaidOutBlock {
+  layout (offset = 16) vec3 foo;
+  layout (offset = 8) vec2 bar;
+  layout (offset = 48) vec3 baz;
+} myBlock;
+# void main() { }
+```
+```txt 错误信息：
+== 0:4(27): error: layout qualifier offset overlaps previous member
+```
+
+设置最小对齐间隔：
+
+```glsl
+layout(std140, align = 16) uniform ManuallyLaidOutBlock {
+  layout (offset = 8) vec2 bar;   // At offset 16 bytes
+  layout (offset = 32) vec3 foo;  // At offset 32 bytes
+  layout (offset = 48) vec3 baz;  // At offset 48 bytes
+} myBlock;
+```
 
 - 共享布局
 
-需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，无法预知数据的位置（为了性能）
+OpenGL 使用的默认布局，定义的时候不要加任何修饰符：
 
-// 查询 uniform 块的信息
+```glsl
+layout uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} transforms;
+```
 
+在这个布局下，OpenGL会自己为 uniform 块的成员分配内存位置，这时候就不能自行指定成员内存位置了：
+
+```glsl
+# #version 460 core
+uniform TransformBlock {
+  layout (offset = 0) float scale;
+  layout (offset = 102) vec3 translation;
+  layout (offset = 116) float rotate[3];
+  layout (offset = 135) mat4 projection_matrix;
+} transforms;
+# 
+# void main() {
+#   gl_Position =  transforms.projection_matrix * vec4(0.0);
+# }
+```
+```txt 编译错误：
+== 0:3(28): error: offset can only be used with std430 and std140 layouts
+== 0:4(29): error: offset can only be used with std430 and std140 layouts
+== 0:5(30): error: offset can only be used with std430 and std140 layouts
+== 0:6(29): error: offset can only be used with std430 and std140 layouts
+```
+
+需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，此时程序员是无法预知数据的位置，只能向 OpenGL 查询数据到底存在哪。
+
+查询某一成员在 uniform 块里的位置
+
+```c
 - 查询成员下标 glGetUniformIndices
-- 查询对应的信息（成员内存起始位置，成员大小）glGetActiveUniformsiv
+```
 
-// 向 uniform 块写入数据
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# use sb7::utils::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "#version 460 core
+#     uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } transforms;
+# 
+#     void main() {
+#       gl_Position =  transforms.projection_matrix * vec4(0.0);
+#     }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = program(&[shader(gl::VERTEX_SHADER, vs),
+#                             shader(gl::FRAGMENT_SHADER, fs)]);
+#     // 查询 uniform 成员的下标
+    use std::ffi::CString;
+    let uniform_names = [CString::new("TransformBlock.rotate"),
+                         CString::new("TransformBlock.scale"),
+                         CString::new("TransformBlock.translation"),
+                         CString::new("TransformBlock.projection_matrix")];
+    let uniform_names = uniform_names.iter()
+                                     .map(|s| s.as_ref().unwrap().as_ptr())
+                                     .collect::<Box<[_]>>();
+    let mut uniform_indices = [0u32; 4];
+    unsafe {
+      gl::GetUniformIndices(program, 4,
+                            uniform_names.as_ptr(),
+                            uniform_indices.as_mut_ptr());
+    }
+    // [2, 0, 1, 3]
+    println!("{:?}", uniform_indices);
+#   }
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+知道 uniform 块成员的下标之后，就可以用这个下标查询成员的内存位置，占用大小等信息：
+
+```c
+- 查询对应的信息（成员内存起始位置，成员大小）glGetActiveUniformsiv
+```
+
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# use sb7::utils::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "#version 460 core
+#     uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } transforms;
+# 
+#     void main() {
+#       gl_Position =  transforms.projection_matrix * vec4(0.0);
+#     }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = program(&[shader(gl::VERTEX_SHADER, vs),
+#                             shader(gl::FRAGMENT_SHADER, fs)]);
+#     // 查询 uniform 成员的下标
+#     use std::ffi::CString;
+#     let uniform_names = [CString::new("TransformBlock.rotate"),
+#                          CString::new("TransformBlock.scale"),
+#                          CString::new("TransformBlock.translation"),
+#                          CString::new("TransformBlock.projection_matrix")];
+#     let uniform_names = uniform_names.map(|s| s.unwrap().into_raw());
+#     let mut uniform_indices = [0u32; 4];
+#     unsafe {
+#       gl::GetUniformIndices(program, 4, uniform_names.as_ptr() as _,
+#                             uniform_indices.as_mut_ptr());
+#       let _ = uniform_names.map(|s| CString::from_raw(s)); // 回收内存
+#     }
+# 
+#     // 查询 uniform 成员的内存起始位置，每个元素的大小
+    let mut uniform_offsets = [0; 4];
+    let mut arr_strides = [0; 4];
+    let mut mat_strides = [0; 4];
+    unsafe {
+      gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+                              gl::UNIFORM_OFFSET,
+                              uniform_offsets.as_mut_ptr());
+      gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+                              gl::UNIFORM_ARRAY_STRIDE,
+                              arr_strides.as_mut_ptr());
+      gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+                              gl::UNIFORM_MATRIX_STRIDE,
+                              mat_strides.as_mut_ptr())
+    }
+#   }
+#   fn shutdown(&self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+可以查看这些数组的数据：
+
+```rust
+println!("uniform_indices: {:?}", uniform_indices);
+println!("     arr_stride: {:?}", arr_strides);
+println!("     mat_stride: {:?}", mat_strides);
+
+```
+```txt 输出：
+uniform_indices: [2, 0, 1, 3]    
+     arr_stride: [4, 0, 0, 0]
+     mat_stride: [0, 0, 0, 16]
+```
+进而得到各个成员的位置，以及每个元素的大小：
+
+```rust
+println!("rotate: offset = {}, stride = {}",
+          uniform_offsets[0], arr_strides[0]);
+println!("scale: offset = {}", uniform_offsets[1]);
+println!("translation: offset = {}", uniform_offsets[2]);
+println!("projection_matrix: offset = {}, stride = {}",
+          uniform_offsets[3], mat_strides[3]);
+```
+```txt 输出：
+scale: offset = 0
+rotate: offset = 28, stride = 4
+translation: offset = 16, stride = 0
+projection_matrix: offset = 48, stride = 16
+```
+
+在查询到 uniform 块的内存布局之后，分配内存，写入数据：
+
+```
+TransformBlock.rotate: float[3]
+TransformBlock.scale: float
+TransformBlock.translation: vec3
+TransformBlock.projection_matrix: mat4
+```
+最简单的情况，写入 float 变量：
+
+```rust
+let data = Box::new([0u8; 4096]);
+let ptr =  data.as_ptr();
+
+unsafe {
+  let offset = uniform_offsets[1] as usize;
+  *(ptr.add(offset) as *mut f32) = 3.0f32;
+}
+```
+
+写入 vec3 变量：
+
+```rust
+unsafe {
+  let offset = uniform_offsets[2] as usize;
+  *(ptr.add(offset) as *mut f32).add(0) = 1.0f32;
+  *(ptr.add(offset) as *mut f32).add(1) = 2.0f32;
+  *(ptr.add(offset) as *mut f32).add(2) = 3.0f32;
+}
+```
+
+写入数组：
+
+```rust
+let rotates: [f32; 3] = [30.0, 40.0, 50.0];
+unsafe {
+  let mut offset = uniform_offsets[0] as usize;
+  for i in 0..3 {
+    *(ptr.add(offset) as *mut f32) = rotates[i];
+    offset += arr_strides[0] as usize;
+  }
+}
+```
+
+写入 mat4 变量：
+
+```rust
+// 以列为主的矩阵
+let mat : [f32; 16]=  [ 1.0, 2.0, 3.0, 4.0,
+                        9.0, 8.0, 7.0, 6.0,
+                        2.0, 4.0, 6.0, 8.0,
+                        1.0, 3.0, 5.0, 7.0 ];
+for i in 0..4 {
+  let mut offset = uniform_offsets[3] as usize
+                 + mat_strides[3] as usize * i;
+  for j in 0..4 {
+    unsafe { *(ptr.add(offset) as *mut f32) = mat[i * 4 + j] };
+    offset += std::mem::size_of::<f32>();
+  }
+}
+```
+
 
 写入数据
 
+// todo 验证 std140 布局
