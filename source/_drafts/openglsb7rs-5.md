@@ -2082,3 +2082,91 @@ void main() {
 <canvas id="spinningcubes"></canvas>
 <script src="/js/openglsb7th/ch5/spinningcubes.js"></script>
 {% endraw %}
+
+#### Uniform 块
+
+过多的 uniform 变量意味着将会有很多散落在各处的`glUniform*()` 函数（难以维护）。将 uniform 变量塞到一个块结构(uniform 块)里，而要传入的数据存储在 buffer 对象中。
+
+用来存储 uniform 块数据的 buffer 对象被成为 UBO (uniform 缓冲区对象)
+
+##### 声明
+
+格式大概是这样：
+
+```glsl
+uniform [块名] {
+  // ... 成员变量
+} [实例名];
+```
+```glsl
+uniform TransformBlock
+{
+  float scale;
+  vec3 transition;
+  float rotate[3];
+  mat4 proj_matrix;
+} transform;
+
+```
+
+访问成员：`transform.scale`， ... 和结构体类似
+
+如果要定义多个 `TransformBlock` 块实例的话，这样子是不行的：
+
+```glsl
+// ERROR
+uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} trans1, trans2;
+```
+
+只能定义成一个数组：
+
+```glsl
+#version 460 core
+uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} transforms[2];
+```
+
+这样子就可以给 transforms[0] 和 transforms[1] 分配不同的 buffer 。
+
+访问属性：
+
+```glsl
+gl_Position =  transforms[0].projection_matrix * vec4(0.0);
+```
+
+##### UBO的内存格式
+
+用来存储 uniform 块内数据的 buffer：UBO。数据在 buffer 内部的布局方式，可以自行取舍：
+
+- 标准布局：
+  - 数据类型的大小 N 字节，则数据的存储位置为 N 字节的整数倍：
+    - int float bool：在 glsl 占用 4 字节，在 buffer 存储地址为 4 的整数倍
+  - 数据类型的大小 N 字节，则二维向量 与 2 * N 字节对齐
+    - vec2 的存储位置与 2 * 4 = 8 字节对齐
+  - 数据类型的大小 N 字节，三维、四维向量与 4 * N 字节对齐
+    - vec3, vec4 的存储位置与 16字节对齐
+  - 数组：数组存储位置的起始位置遵循以上规则，但是之后会向上取整到 4 * N 字节
+  
+
+- 共享布局
+
+需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，无法预知数据的位置（为了性能）
+
+// 查询 uniform 块的信息
+
+- 查询成员下标 glGetUniformIndices
+- 查询对应的信息（成员内存起始位置，成员大小）glGetActiveUniformsiv
+
+// 向 uniform 块写入数据
+
+写入数据
+
