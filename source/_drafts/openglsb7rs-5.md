@@ -2509,7 +2509,139 @@ for i in 0..4 {
 }
 ```
 
+向 OpenGL 查询 uniform 块的位置：
 
-写入数据
+```c
+- glGetUniformIndex???
+```
+
+给 uniform 块指定一个绑定下标
+
+```c
+- glUniformBlockBinding
+```
+
+将 buffer 绑定到刚才设置的绑定下标：
+
+```c
+- glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer);
+```
+
+```rust
+let [harry_index, bob_index, susan_index] = ["Harry", "Bob", "Susan"]
+  .map(|s| CString::new(s).unwrap())
+  .map(|s| gl::GetUniformBlockIndex(program, s.as_ptr()));
+
+gl::UniformBlockBinding(program, harry_index, 1);
+gl::BindBufferBase(gl::UNIFORM_BUFFER, 1, buf_c);
+
+gl::UniformBlockBinding(program, bob_index, 3);
+gl::BindBufferBase(gl::UNIFORM_BUFFER, 3, buf_a);
+
+gl::UniformBlockBinding(program, susan_index, 0);
+gl::BindBufferBase(gl::UNIFORM_BUFFER, buf_b, 0);
+```
+
+uniform 块的绑定下标还可以在 shader 里指定：
+
+```glsl
+layout (binding = 1) uniform Harry {
+#   float a;
+#   mat4 b;
+};
+
+uniform (binding = 3) Bob {
+#   int c;
+#   ivec4 d;
+};
+
+uniform (binding = 0) Susan {
+#   mat4 e[10];
+};
+```
+
+这样子就可以删除 `UniformBlockBinding()` 函数了：
+
+```
+- gl::UniformBlockBinding(program, harry_index, 1);
+  gl::BindBufferBase(gl::UNIFORM_BUFFER, 1, buf_c);
+
+- gl::UniformBlockBinding(program, bob_index, 3);
+  gl::BindBufferBase(gl::UNIFORM_BUFFER, 3, buf_a);
+
+- gl::UniformBlockBinding(program, susan_index, 0);
+  gl::BindBufferBase(gl::UNIFORM_BUFFER, buf_b, 0);
+```
 
 // todo 验证 std140 布局
+
+## Shader 存储块
+
+buffer 除了用来向 shader 传递以外，还可以通过 shader 存储块来存储来自 shader 的数据。
+
+和 uniform 块的相似之处：
+- 声明：和 uniform 块类似，只是将 uniform 关键字替换成 buffer
+- 绑定buffer：也是用 `BindBufferBase` 函数，只是将 `GL_UNIFORM_BUFFER` 换成 `GL_SHADER_STORAGE_BUFFER`
+- 可以指定内存布局：std140 std430
+
+不同之处：
+- shader 可以写入 uniform 块的内容
+- shader 存储块内部的成员是原子操作(读取-编辑-写入 --> 一个操作)
+- 在 OpenGL 程序里可以用 glBufferData 来向 shader 存储块写入数据
+  也可以通过 glMapBufferRange 读取 uniform 存储块的数据
+
+```glsl
+#version 460 core
+
+struct vertex {
+  vec4 position;
+  vec3 color;
+};
+
+layout (binding = 0, std430) buffer my_vertices {
+  vertex vertices[];
+};
+
+uniform mat4 transform_matrix;
+
+out VS_OUT {
+  vec3 color;
+} vs_out;
+
+void main(void) {
+  gl_Position = transform_matrix * vertices[gl_VertexID].position;
+  vs_out.color = vertices[gl_VertexID].color;
+}
+```
+
+在 shader 存储块内，只有 int 和 uint 变量才能进行原子操作。需要调用以下函数：
+
+|Syntax                                   |Description                  |
+|:----------------------------------------|:----------------------------|
+|uint atomicAdd(inout uint mem, uint data)<br>int atomicAdd(inout int mem, int data) |从 mem 读数据，将其和 data 相加，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem + data|
+|uint atomicMin(inout uint mem, uint data)<br>int atomicMin(inout int mem, int data) |从 mem 读数据，将其和 data 取最小值，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem.min(data) |
+|uint atomicMax(inout uint mem, uint data)<br>int atomicMax(inout int mem, int data) |从 mem 读数据，将其和 data 取最大值，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem.max(data) |
+|uint atomicAnd(inout uint mem, uint data)<br>int atomicAnd(inout int mem, int data) |从 mem 读数据，将其和 data 按位求逻辑与，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem & data |
+|uint atomicOr(inout uint mem, uint data) <br>int atomicOr(inout int mem, int data)  |从 mem 读数据，将其和 data 按位求逻辑或，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem \| data|
+|uint atomicXor(inout uint mem, uint data)<br>int atomicXor(inout int mem, int data) |从 mem 读数据，将其和 data 按位异或，结果存入 mem。返回值：mem 之前的值 <br> mem <- mem xor data  |
+|uint atomicExchange(inout uint mem, uint data)<br>int atomicExchange(inout int mem, int data) | 从 mem 读数据，将 data 写入 mem。返回值：mem 之前的值 <br> mem <- data             |
+|uint atomicCompSwap(inout uint mem, uint compare, uint data)<br>int atomicCompSwap(inout int mem, int compare, int data) | 从 mem 读数据，如果读到的数据和 comp 相等，将 data 写入 mem。返回值：mem 之前的值<br> if mem == comp {<br>&nbsp;&nbsp; mem <- data<br>}|
+
+#### 同步访问内存
+
+在任何情况下，对内存的读操作都是安全的。但是，当 shader 开始将数据写入 buffer 时，无论是写入 shader 存储块里的变量，还是显式调用可能会写入内存的原子操作函数，在某些情况下需要避免内存风险。
+
+内存风险大概分为三类：
+
+- 先读后写(RAW)风险：当程序企图在写入一块内存后读取时，根据系统的体系结构，读和写可能被重新排序，使得读在写之前完成，导致旧数据返回应用程序
+- 先写后写（WRW)风险：当程序连续两次写入同一块内存时，在某些体系结构下，无法保证第二个数据会覆盖第一个数据，导致最终进入内存的是第一个数据
+- 先写后读风险（WAR）风险：只在并行处理系统里（如GPU）出现，当一个执行线程在另一个线程 __认为__ 自己读取后写入内存时，就可能发生。如果这些操作被重新排序，执行读操作的线程会读取到第二个线程写入的数据，而这是无法预料的。
+
+由于OpenGL所期望运行的系统具有深度流水线和高度并行的特性，它包含了许多机制来减轻和控制内存风险。如果没有这些特性，OpenGL实现将需要更加保守地重新排序着色器并并行运行它们。处理内存风险的主要工具是*内存屏障（memory barrier）*。
+
+内存屏障本质上是一个标记，它告诉OpenGL，“嘿，如果你要开始重新排序，那很好--只是不要让我在这一点之后说的任何话发生在我在这一点之前说的任何话之前。”你可以在应用程序代码中（通过调用OpenGL）和着色器中插入屏障。
+
+其实本质上是一个标记点，只有在这个点之前的事件都完成后，OpenGL才可以执行这个点之后的事件。
+
+##### 在 OpenGL 应用程序上使用内存屏障
+
