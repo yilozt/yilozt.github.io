@@ -2643,5 +2643,103 @@ void main(void) {
 
 其实本质上是一个标记点，只有在这个点之前的事件都完成后，OpenGL才可以执行这个点之后的事件。
 
-##### 在 OpenGL 应用程序上使用内存屏障
+##### 在 OpenGL 应用程序内使用屏障
+
+```c
+void glMemoryBarrier(GLbitfield barriers);
+```
+
+// TODO: barriers 参数 
+
+##### 在 shader 内使用屏障
+
+```glsl
+void memoryBarrier();
+```
+
+更为具体的函数：`memoryBarrierBuffer()`
+
+## 原子计数器
+
+一种特殊类型的变量，表示跨多个着色器调用共享的存储。
+
+- 这个存储由一个buffer对象支持，GLSL中提供了函数来递增和递减存储在缓冲区中的值。
+  - 这些操作的特殊之处在于它们是原子的：就像着色器存储块成员的等效函数（如表5.5所示）一样，它们返回计数器修改前的原始值。
+  - 就像其他原子操作一样，如果两个着色器调用同时递增同一个计数器，OpenGL会让它们轮流执行。不能保证这些操f作将发生的顺序，但能保证结果正确。
+
+在 shader 内声明原子计数器：
+
+```glsl
+layout (binding = 0) uniform atomic_uint my_variable
+```
+
+binding 代表原子计数器和用来存储存储值的 buffer 之间的绑定点。
+
+每个原子计数器存储在缓冲区对象中的特定偏移量处。这个偏移量可以在 shader 里通过 offset 限定符指定：
+
+```glsl
+layout (binding = 3, offset = 8) uniform atomic_uint my_variable;
+```
+
+存储原子计数器的 buffer 需要绑定到 `GL_ATOMIC_COUNTER_BUFFER` 上：
+
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# use std::{mem::size_of, ptr::null};
+# 
+// 创建 buffer
+let mut buf = 0;
+gl::CreateBuffers(1, &mut buf);
+
+// 绑定到 GL_ATOMIC_COUNTER_BUFFER，分配空间
+gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
+gl::BufferData(gl::ATOMIC_COUNTER_BUFFER,
+                16 * size_of::<GLuint>() as isize,
+                null(), gl::DYNAMIC_COPY);
+
+// 设置绑定下标，和 shader 内的原子计数器对应
+gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+```
+
+初始化存储原子计数器的 buffer：
+
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# use std::{mem::size_of, ptr::null};
+# let mut buf = 0;
+# gl::CreateBuffers(1, &mut buf);
+# gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
+# gl::NamedBufferData(buf,
+#                     16 * size_of::<GLuint>() as isize,
+#                     null(), gl::DYNAMIC_COPY);
+# gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+# 
+let zero: GLuint = 0;
+
+// 方法1 - 使用 gl(Named)BufferSubData 命令
+gl::NamedBufferSubData(buf,
+                       2 * size_of::<GLuint>() as isize,
+                       size_of::<GLuint>() as isize,
+                       &zero as *const _ as _);
+
+// 方法2 - 使用 glMap(Named)BufferRange 命令将 buffer 映射到
+//        OpenGL 应用程序的内存空间上，然后直接写入
+let data: *mut GLuint =
+  gl::MapNamedBufferRange(buf,
+                          0, 16 * size_of::<GLuint>() as isize,
+                          gl::MAP_WRITE_BIT |
+                          gl::MAP_INVALIDATE_RANGE_BIT) as _;
+*data.add(2) = 0;
+
+// 方法3 - 使用 glClear(Named)BufferSubData 命令
+gl::ClearNamedBufferSubData(buf,
+                            gl::R32UI,
+                            2 * size_of::<GLuint>() as isize,
+                            2 * size_of::<GLuint>() as isize,
+                            gl::RED_INTEGER,
+                            gl::UNSIGNED_INT,
+                            &zero as *const u32 as _);
+```
 

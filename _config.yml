@@ -141,4 +141,12 @@ deploy:
     github: git@github.com:yilozt/yilozt.github.io.git
   branch: main
 
-
+# RSS
+feed:
+    type: atom
+    path: atom.xml
+    limit: 20
+    hub:
+    content:
+    content_limit:
+    content_limit_delim: ' '
