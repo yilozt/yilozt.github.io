@@ -57,7 +57,8 @@
 		</script>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
 	
-<meta name="generator" content="Hexo 5.4.1"></head>
+<meta name="generator" content="Hexo 5.4.1"><link rel="alternate" href="atom.xml" title="笔记本" type="application/atom+xml">
+</head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -163,27 +164,27 @@
 <p>这样 git 用户就能通过 ssh 使用 git，但不能通过 ssh 登陆服务器。</p>
 </li>
 <li><p>为博客创建一个 git 仓库，假设 git 仓库位于 /home 目录，并将仓库的 owner 设置为 git：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home</span><br><span class="line"><span class="comment"># 在 /home 目录下创建名为 `site.git` 的仓库 </span></span><br><span class="line">sudo git init --bare site.git</span><br><span class="line">sudo chown -R git ./site.git</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home</span><br><span class="line"><span class="comment"># 在 /home 目录下创建名为 `site.git` 的仓库 </span></span><br><span class="line">sudo git init --bare site.git</span><br><span class="line">sudo <span class="built_in">chown</span> -R git ./site.git</span><br></pre></td></tr></table></figure>
 
 <p>这里 git 命令在 /home 文件夹下创建了一个裸仓库 site.git，裸仓库没有工作区，放在服务器纯粹是拿来上传博客内容。</p>
 </li>
 <li><p>cd 进博客仓库，可以看到 site.git 文件夹的目录结构：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/site.git</span><br><span class="line">ls</span><br><span class="line"><span class="comment">#  branches  config  description  HEAD  hooks  info  objects  refs</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/site.git</span><br><span class="line"><span class="built_in">ls</span></span><br><span class="line"><span class="comment">#  branches  config  description  HEAD  hooks  info  objects  refs</span></span><br></pre></td></tr></table></figure>
 
 <p>因为是裸仓库，里面的文件普通仓库下 <code>.git</code> 文件夹是一样的，只是用来存储仓库的历史记录。这里需要给仓库创建一个 <code>hook</code>， 在 <code>hooks</code> 文件夹下创建 <code>post-receive</code>文件：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/site.git</span><br><span class="line">sudo touch hooks/post-receive    <span class="comment"># 创建一个 hook</span></span><br><span class="line">sudo nano hooks/post-receive     <span class="comment"># 编辑这个文件</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/site.git</span><br><span class="line">sudo <span class="built_in">touch</span> hooks/post-receive    <span class="comment"># 创建一个 hook</span></span><br><span class="line">sudo nano hooks/post-receive     <span class="comment"># 编辑这个文件</span></span><br></pre></td></tr></table></figure>
 
 <p>将 <code>hooks/post-receive</code> 文件修改为下面内容：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git --work-tree=/var/www/html --git-dir=/home/site.git checkout -f main</span><br></pre></td></tr></table></figure>
 
 <p>这里 <code>--work-tree</code> 为 html 服务器部署的目录， <code>git-dir</code> 为 git 仓库的位置。这里每当通过 git 上传博客内容时，git 会自动检出仓库 <code>/home/site.git</code> 的内容，将其部署到 <code>/var/www/html</code>。</p>
 <p>不要忘了给 <code>hook</code> 添加执行权限：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo chmod +x hooks/post-receive</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo <span class="built_in">chmod</span> +x hooks/post-receive</span><br></pre></td></tr></table></figure>
 
 <p>这样子 git 服务器就算配置完成了。</p>
 </li>
 <li><p>为了确保 git 能够将文件部署到 html 服务器，需要保证 git 用户可以读写 <code>/var/www/html</code> 这个文件夹，可以将 <code>/var/www/html</code> 的 owner 修改为 git</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo chmod -R git /var/www/html</span><br></pre></td></tr></table></figure></li>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo <span class="built_in">chmod</span> -R git /var/www/html</span><br></pre></td></tr></table></figure></li>
 </ol>
 <h2 id="将博客内容上传到服务器"><a href="#将博客内容上传到服务器" class="headerlink" title="将博客内容上传到服务器"></a>将博客内容上传到服务器</h2><ol>
 <li><p>cd 到博客所在的位置，使用 git 命令将服务器上的 git 仓库 clone 到本地。clone 的时候 git 命令会提示你输入服务器上 git 用户的密码：</p>

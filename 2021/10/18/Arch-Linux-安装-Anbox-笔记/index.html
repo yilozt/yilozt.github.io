@@ -62,7 +62,8 @@
 		</script>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
 	
-<meta name="generator" content="Hexo 5.4.1"></head>
+<meta name="generator" content="Hexo 5.4.1"><link rel="alternate" href="atom.xml" title="笔记本" type="application/atom+xml">
+</head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -173,7 +174,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yay -S anbox-modules-dkms</span><br></pre></td></tr></table></figure>
 
 <p>加载内核模块：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo modprobe binder_linux devices=binder,hwbinder,vndbinder,anbox-binder,anbox-hwbinder,anbox-vndbinder</span><br><span class="line">sudo modprobe ashmem_linux</span><br><span class="line">sudo mkdir -p /dev/binderfs</span><br><span class="line">sudo mount -t binder binder /dev/binderfs</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo modprobe binder_linux devices=binder,hwbinder,vndbinder,anbox-binder,anbox-hwbinder,anbox-vndbinder</span><br><span class="line">sudo modprobe ashmem_linux</span><br><span class="line">sudo <span class="built_in">mkdir</span> -p /dev/binderfs</span><br><span class="line">sudo mount -t binder binder /dev/binderfs</span><br></pre></td></tr></table></figure>
 
 <p>编辑 <code>/etc/modules-load.d/anbox.conf</code>，以便开机时启用内核模块：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ashmem_linux</span><br><span class="line">binder_linux</span><br></pre></td></tr></table></figure>
@@ -218,7 +219,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart anbox-container-manager.service</span><br></pre></td></tr></table></figure>
 
 <h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>接下来只需要下载脚本，运行就行，这个过程需要下载一些文件，可能需要翻越 GFW：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir a</span><br><span class="line"><span class="built_in">cd</span> a</span><br><span class="line">wget https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh</span><br><span class="line">chmod +x install-playstore.sh</span><br><span class="line">./install-playstore.sh</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> a</span><br><span class="line"><span class="built_in">cd</span> a</span><br><span class="line">wget https://raw.githubusercontent.com/geeks-r-us/anbox-playstore-installer/master/install-playstore.sh</span><br><span class="line"><span class="built_in">chmod</span> +x install-playstore.sh</span><br><span class="line">./install-playstore.sh</span><br></pre></td></tr></table></figure>
 
 <p>没问题的话，打开 Anbox 应该就能发现多了一个 Google 引用市场，arm 构架的 apk 也能成功安装。</p>
 <p><img src="./arm-res.png" alt="arm-res"></p>
