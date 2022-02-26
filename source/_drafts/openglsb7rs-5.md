@@ -5,86 +5,76 @@ categories: 学习笔记
 date: 2022-01-23 13:35:55
 ---
 
-- 如何创建 缓冲区对象（buffer） 和 纹理（texture），用来存储数据
-- 如何让 OpenGL 自动填充顶点属性
-- 如何从 shader 访问 buffer 和 texture 的数据
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记，源码：
+- OpenGL 超级宝典（第七版）随书源码：https://github.com/openglsuperbible/sb7code
+  - 随书资源文件：http://openglsuperbible.com/files/superbible7-media.zip
+  - 自己尝试的 Rust 实现： https://github.com/yilozt/sb7coders
+- 自己尝试的 WebGL + Rust 的展示 demo: https://github.com/yilozt/sb7coders/tree/webgl
+  - 在线示例: https://yilozt.github.io/sb7coders
 
-显卡可以吞吐大量数据，每次向 OpenGL 传输少量数据会浪费性能。OpenGL 主要通过两种方式来存储、访问数据：Buferr 和 纹理：
+这一章主要介绍了 OpenGL 中两种重要的数据形式：缓冲（Buffer）和纹理（Texture）：
 
-- buffer 将数据线性存储在一个内存块中，作为通用的容器
-- texture 用来存储多维的数据结构（比如图像）
+- 缓冲：OpenGL 里最常用的、用来存储数据的容器，可以类比成 C 里使用 malloc() 分配的一块空间，常用来存储模型的顶点数据。里面的数据线性存储，类似于一维数组。
+- 纹理：用来存储多维的数据结构。如最常见的 2D 纹理，用来当作模型的贴图。
 
-## Buffer
+## 缓冲
 
-- buffer：内存中分配的一块区域，线性存储数据
-- buffer 可以里的数据可以传递给 shader，也可以用来存储 shader 产生的数据
+一般用来存储顶点数据，然后作为顶点着色器的输入。也可以作为一般容器，用来在 OpenGL 程序和着色器之间传递数据。
 
-### 创建 Buffer
+### 创建缓冲区对象
 
-最常用的函数：`glCreateBuffers()`，用来同时创建 buffer 对象：
-
-```c
-void glCreateBuffers(GLsizei n, GLuint *buffers);
-```
-
-- 第一个参数 `n` 为要创建 buffer 对象的个数，也就是说这个函数可以一次性创建多个 buffer
-- 第二个参数是一个 `GLuint` 类型的指针，可以看成 `glCreateBuffers` 的返回值了
-  代表这些创建的 buffer 对象
-
-常见的使用方式：
+一般使用 `glCreateBuffers() / glGenBuffers()`，这两个函数功能、原型相同：
 
 ```c
-GLuint buf;
-glCreateBuffers(1, &buf);
+void glCreateBuffers (GLsizei n, GLuint *buffers);
+void glGenBuffers    (GLsizei n, GLuint *buffers);
 ```
 
-这样子就创建了一个 buffer，以后就可以通过 buf 这个变量来使用。
+- 第一个参数 `n` 为要创建 buffer 对象的个数，也就是说这个函数可以一次性创建多个缓冲区对象
+- 第二个参数是一个 `GLuint` 类型的指针，用来存储返回的缓冲区对象
 
-如果要一次性创建多个 buffer，第二个参数可以传一个数组进去：
+创建单个缓冲区对象：
 
-```c
-GLuint bufs[3];
-glCreateBuffers(3, buf);
+```rust
+let mut buf = 0;
+gl::CreateBuffers(1, &mut buf);
 ```
+创建多个缓冲区对象，第二个参数传一个数组：
 
-这里不难发现，OpenGL 在创建一个对象后，会给我们分配一个 GLuint 变量，通过这个 GLuint 变量来操控
-OpenGL 对象。在 OpenGL 的文档里，这个 GLuint 变量被称为对象的 _name_ 属性。
+```rust
+let mut buf = [0u32; 3];
+gl::CreateBuffers(3, buf.as_mut_ptr());  
+```
+OpenGL 里使用 GLuint 变量来代表通过 `glCreate...() / glGen...()` 创建的对象。
 
-### 绑定 buffer 对象
-
-创建 buffer 对象之后，可以通过调用 `glBindBuffer()` 函数，来确定 buffer 对象的类型，用来说明以后这个 buffer 被用来来干什么，函数原型如下：
+创建缓冲区对象之后，可以通过 `glBindBuffer()` 将对象绑定到当前的 OpenGL 环境中：
 
 ```c
 void glBindBuffer(GLenum target, GLuint buffer);
 ```
+- `target` 被称为绑定点（靶点）
+  - 最常见的 target 应该就是 `GL_ARRAY_BUFFER` 了，将缓冲区作为顶点着色器的输入时就需要绑到这个 target 上
+- `buffer` 注意类型是 GLuint， 即之前 `glCreate...() / glGen...()` 返回的 GLuint 变量（创建的对象）
 
-在 OpenGL 里使用一个 buffer 之前，就必须调用`glBindBuffer()`函数，来将 buffer 添加到 opengl 的上下文中。
-
-比如说要将 buffer 对象里的数据绑定为顶点属性：
-
-```c
-GLuint buf;
-glCreateBuffer(1, &buf);
-glBindBuffer(GL_ARRAY_BUFFER, buf);
+```rust
+let mut buf = 0;
+gl::CreateBuffers(1, &mut buf);  
+gl::BindBuffer(gl::ARRAY_BUFFER, buf);
 ```
 
-上面传入的 `GL_ARRAY_BUFFER` 被称为 buffer 对象的**绑定目标**，也可以称为**绑定点**。
+到这里只是创建和绑定了一个缓冲区，实际上还没有分配空间:
 
-到这里只是创建和绑定了一个 buffer 对象，并没有给 buffer 分配空间:
+```rust
+let mut buf = 0;
+gl::CreateBuffers(1, &mut buf);
 
-```c
-GLuint buf;
-GLint size = -1;
+let mut size = -1;
+gl::GetNamedBufferParameteriv(buf, gl::BUFFER_SIZE, &mut size);
 
-glCreateBuffers(1, &buf);
-glGetNamedBufferParameteriv(buf, GL_BUFFER_SIZE, &size);
-
-printf("size: %d bytes", size); // size: 0 bytes
+// size of buffer: 0 bytes
+println!("size of buffer: {} bytes", size);
 ```
-
-### 分配内存空间
-
-分配空间的操作主要是通过调用这两个函数：
+分配空间的操作主要是通过 `gl[Named]BufferStorage()` 来完成：
 
 ```c
 void glBufferStorage(GLenum target,
@@ -92,34 +82,39 @@ void glBufferStorage(GLenum target,
                      const GLvoid * data,
                      GLbitfield flags);
 void glNamedBufferStorage(GLuint buffer,
-	                        GLsizei size,
-	                        const void *data,
-	                        GLbitfield flags);
+                          GLsizei size,
+                          const void *data,
+                          GLbitfield flags);
 ```
-
-这两个函数功能一致，都是给 buffer 分配内存空间。如果之前 buffer 对象已经绑定了，就可以通过第一个函数的 target 参数来分配空间。
+只是第一个参数不同，`glBufferStorage()` 传入的是缓冲区的绑定点，而 `glNamedBufferStorage()` 传入缓冲区对象本身。代表缓冲区对象的 GLuint 变量称为对象的**名称**(name) 
 
 - `size`：分配多少内存，以字节为单位
-- `data`：用来初始化（复制到） buffer 的数据，可以传递 null，这样就不会复制任何数据，如果要传入 data 对 buffer 进行初始化，data 的大小必须大于等于 size 字节。
-- `flags`：只起到给 OpenGL 提供信息的作用，说明 buffer 在存储时有那些要求。和其他的 OpenGL 命令有关
+- `data`：用来初始化（复制到） buffer 的数据，可以传递 null，这样就不会复制任何数据，如果要传入 data 对 buffer 进行初始化，`data` 的大小必须大于等于 `size` 字节
+- `flags`：只起到给 OpenGL 提供信息的作用，让 OpenGL 分配符合预期的内存
 
 
-buffer 对象在分配内存后，内存空间的 `size` 和 `flag` 属性是不可变的。如果要改变一个 buffer 对象的大小，就只能先将销毁内存空间，再调用上面两个函数重新分配。
+在分配内存后，无法再修改缓冲区的 size 和 flag 属性。只能将缓冲区销毁后重新创建。
 
-比如要给 buffer 分配 1MB 的空间，并将字符串 "hello world" 初始化 buffer 的内存空间:
+比如要给 buffer 分配 100MB 的内存空间:
 
 ```rust
-# use std::ffi::c_void;
 # use sb7::application::Application;
 # struct App;
 # 
 # unsafe fn buf_test() {
+  use std::ptr::null;
   let mut buf = 0;
-  let mut data = Vec::from("hello world");
-  data.resize(1024 * 1024, 0);
+
+  // 100MB = 100 * 1024 * 1024 Btye
+  let size = 100 * 1024 * 1024;
+
+#   println!("Press any key to alloc storage...");
+#   std::io::stdin().read_line(&mut String::new()).unwrap();
+# 
   gl::CreateBuffers(1, &mut buf);
-  let data = data.as_ptr() as *const c_void;
-  gl::NamedBufferStorage(buf, 1024 * 1024, data, gl::DYNAMIC_STORAGE_BIT);
+  gl::NamedBufferStorage(buf, size as _, null(), gl::DYNAMIC_STORAGE_BIT);
+# 
+#   println!("Done");
 # }
 # 
 # impl Application for App {
@@ -133,10 +128,32 @@ buffer 对象在分配内存后，内存空间的 `size` 和 `flag` 属性是不
 # fn main() {
 #   App.run()
 # }
+```
+调用 `glNamedBufferStorage()` 之前用 nvidia-smi 查询显存：
 
 ```
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A      3035      G   target/debug/test                   2MiB |
++-----------------------------------------------------------------------------+
+```
+调用 `glNamedBufferStorage()` 之后用 nvidia-smi 查询显存：
 
-下面的函数需要在给 buffer 分配空间后调用：
+```
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|    0   N/A  N/A      3035      G   target/debug/test                 102MiB |
++-----------------------------------------------------------------------------+
+```
+
+应用的显存占用从 2M 增加到了 200M，说明缓冲区对象的内存空间其实是分配内显存里的。
+
 
 ### 更新 buffer 缓冲区的内容
 

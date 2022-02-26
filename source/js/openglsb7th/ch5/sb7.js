@@ -235,6 +235,68 @@ function getArrayF32FromWasm0(ptr, len) {
 }
 /**
 */
+export class _ch3_1_vertexattr {
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg__ch3_1_vertexattr_free(ptr);
+    }
+    /**
+    * @param {number | undefined} width
+    * @param {number | undefined} height
+    * @param {string | undefined} id
+    */
+    static run(width, height, id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch3_1_vertexattr_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
+    }
+    /**
+    */
+    static stop() {
+        wasm._ch3_1_vertexattr_stop();
+    }
+}
+/**
+*/
+export class _ch3_2_transdata {
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg__ch3_2_transdata_free(ptr);
+    }
+    /**
+    * @param {number | undefined} width
+    * @param {number | undefined} height
+    * @param {string | undefined} id
+    */
+    static run(width, height, id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch3_2_transdata_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
+    }
+    /**
+    */
+    static stop() {
+        wasm._ch3_2_transdata_stop();
+    }
+}
+/**
+*/
 export class _ch5_10_alienrain {
 
     __destroy_into_raw() {
@@ -636,6 +698,37 @@ export class _ch5_9_mirrorclampedge {
         wasm._ch5_9_mirrorclampedge_stop();
     }
 }
+/**
+*/
+export class _default {
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg__default_free(ptr);
+    }
+    /**
+    * @param {number | undefined} width
+    * @param {number | undefined} height
+    * @param {string | undefined} id
+    */
+    static run(width, height, id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._default_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
+    }
+    /**
+    */
+    static stop() {
+        wasm._default_stop();
+    }
+}
 
 async function load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
@@ -677,6 +770,10 @@ async function init(input) {
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
     };
+    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+        const ret = getStringFromWasm0(arg0, arg1);
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbindgen_cb_drop = function(arg0) {
         const obj = takeObject(arg0).original;
         if (obj.cnt-- == 1) {
@@ -685,10 +782,6 @@ async function init(input) {
         }
         const ret = false;
         return ret;
-    };
-    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
-        const ret = getStringFromWasm0(arg0, arg1);
-        return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_object_clone_ref = function(arg0) {
         const ret = getObject(arg0);
@@ -842,6 +935,9 @@ async function init(input) {
     imports.wbg.__wbg_vertexAttrib1f_ec8f1ffa7f830f47 = function(arg0, arg1, arg2) {
         getObject(arg0).vertexAttrib1f(arg1 >>> 0, arg2);
     };
+    imports.wbg.__wbg_vertexAttrib4fv_7dd07db85d8c127b = function(arg0, arg1, arg2, arg3) {
+        getObject(arg0).vertexAttrib4fv(arg1 >>> 0, getArrayF32FromWasm0(arg2, arg3));
+    };
     imports.wbg.__wbg_vertexAttribPointer_4e139167926d5080 = function(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
         getObject(arg0).vertexAttribPointer(arg1 >>> 0, arg2, arg3 >>> 0, arg4 !== 0, arg5, arg6);
     };
@@ -928,6 +1024,10 @@ async function init(input) {
         const ret = getObject(arg0) instanceof HTMLInputElement;
         return ret;
     };
+    imports.wbg.__wbg_checked_5b6eab0ab31f5d34 = function(arg0) {
+        const ret = getObject(arg0).checked;
+        return ret;
+    };
     imports.wbg.__wbg_setchecked_f6ead3490df88a7f = function(arg0, arg1) {
         getObject(arg0).checked = arg1 !== 0;
     };
@@ -999,12 +1099,12 @@ async function init(input) {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper150 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 22, __wbg_adapter_18);
+    imports.wbg.__wbindgen_closure_wrapper146 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 14, __wbg_adapter_18);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper151 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 22, __wbg_adapter_21);
+    imports.wbg.__wbindgen_closure_wrapper147 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 14, __wbg_adapter_21);
         return addHeapObject(ret);
     };
 
