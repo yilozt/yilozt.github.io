@@ -132,6 +132,8 @@ theme_config:
   mathjax:
     enabled: true
 
+  # Disable cdn
+  cdn:
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

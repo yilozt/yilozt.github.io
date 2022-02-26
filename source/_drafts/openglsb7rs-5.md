@@ -5,8 +5,6 @@ categories: 学习笔记
 date: 2022-01-23 13:35:55
 ---
 
-
-
 - 如何创建 缓冲区对象（buffer） 和 纹理（texture），用来存储数据
 - 如何让 OpenGL 自动填充顶点属性
 - 如何从 shader 访问 buffer 和 texture 的数据
@@ -1581,8 +1579,7 @@ uniform mat4 mv_mat = mat4(1.0);
 对应的效果如下：
 
 {% raw %}
-<canvas id="uniform_mat"></canvas>
-<script src="/js/openglsb7th/ch5/uniform_mat.js"></script>
+<div class="demo_app" id="_ch5_1_0_uniform_mat"></div>
 {% endraw %}
 
 #### 通过 uniform 变量设置变换矩阵
@@ -1886,8 +1883,7 @@ void main() {
 ```
 
 {% raw %}
-<canvas id="spinningcube"></canvas>
-<script src="/js/openglsb7th/ch5/spinningcube.js"></script>
+<div class="demo_app" id="_ch5_2_spinningcube"></div>
 {% endraw %}
 
 绘制多个物体：在 render 函数里多次调用 `glDrawArray` 就行：
@@ -2079,8 +2075,7 @@ void main() {
 ```
 
 {% raw %}
-<canvas id="spinningcubes"></canvas>
-<script src="/js/openglsb7th/ch5/spinningcubes.js"></script>
+<div class="demo_app" id="_ch5_3_spinningcubes"></div>
 {% endraw %}
 
 #### Uniform 块
@@ -2563,13 +2558,10 @@ uniform (binding = 0) Susan {
 这样子就可以删除 `UniformBlockBinding()` 函数了：
 
 ```
-- gl::UniformBlockBinding(program, harry_index, 1);
   gl::BindBufferBase(gl::UNIFORM_BUFFER, 1, buf_c);
 
-- gl::UniformBlockBinding(program, bob_index, 3);
   gl::BindBufferBase(gl::UNIFORM_BUFFER, 3, buf_a);
 
-- gl::UniformBlockBinding(program, susan_index, 0);
   gl::BindBufferBase(gl::UNIFORM_BUFFER, buf_b, 0);
 ```
 
@@ -2627,7 +2619,7 @@ void main(void) {
 |uint atomicExchange(inout uint mem, uint data)<br>int atomicExchange(inout int mem, int data) | 从 mem 读数据，将 data 写入 mem。返回值：mem 之前的值 <br> mem <- data             |
 |uint atomicCompSwap(inout uint mem, uint compare, uint data)<br>int atomicCompSwap(inout int mem, int compare, int data) | 从 mem 读数据，如果读到的数据和 comp 相等，将 data 写入 mem。返回值：mem 之前的值<br> if mem == comp {<br>&nbsp;&nbsp; mem <- data<br>}|
 
-#### 同步访问内存
+### 同步访问内存
 
 在任何情况下，对内存的读操作都是安全的。但是，当 shader 开始将数据写入 buffer 时，无论是写入 shader 存储块里的变量，还是显式调用可能会写入内存的原子操作函数，在某些情况下需要避免内存风险。
 
@@ -2643,7 +2635,7 @@ void main(void) {
 
 其实本质上是一个标记点，只有在这个点之前的事件都完成后，OpenGL才可以执行这个点之后的事件。
 
-##### 在 OpenGL 应用程序内使用屏障
+#### 在 OpenGL 应用程序内使用屏障
 
 ```c
 void glMemoryBarrier(GLbitfield barriers);
@@ -2651,7 +2643,7 @@ void glMemoryBarrier(GLbitfield barriers);
 
 // TODO: barriers 参数 
 
-##### 在 shader 内使用屏障
+#### 在 shader 内使用屏障
 
 ```glsl
 void memoryBarrier();
@@ -2743,3 +2735,974 @@ gl::ClearNamedBufferSubData(buf,
                             &zero as *const u32 as _);
 ```
 
+在初始化 buffer，并将和原子计数器绑定后，就可以在 shader 内使用原子计数器计数了。
+
+递增计数器：
+
+```glsl
+uint atomicCounterIncrement(atomic_uint c);
+```
+
+这个函数从原子计数器读取值，将其加一，返回原来读到的值。
+
+递减计数器：
+
+```glsl
+uint atomicCounterDecrement(atomic_uint c);
+```
+
+**这个函数返回减一后的值。**
+
+查询原子计数器的值：
+
+```glsl
+uint atomicCounter(atomic_uint c);
+```
+在片段着色器内使用原子计数器来计算渲染对象在屏幕空间上的面积：
+
+```glsl
+#version 450 core
+layout (binding = 0, offset = 0) uniform atomic_uint area;
+
+void main(void) {
+  atomicCounterIncrement(area);
+}
+```
+shader 内没有输出（使用 out 修饰的变量），不会向帧缓冲写入任何数据。在运行这个 shader 时，可以关闭向帧缓冲的写入：
+
+```c
+glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+```
+重新启用对缓冲区的写入：
+
+```c
+glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+```
+
+原子计数器的值存储在 buffer 上，因此可以将原子计数器绑定到其他的 buffer 对象，比如 `GL_UNIFORM_BUFFER`，之后就可以通过 uniform 块来使用原子计数器的值了：
+
+```glsl
+#version 450 core
+
+layout (binding = 0) uniform area_block {
+  uint counter_value;
+}
+
+out vec4 color;
+
+uniform float max_area;
+
+void main(void) {
+  float brightness = clamp(float(counter_value) / max_area,
+                           0.0, 1.0);
+  color = vec4(vec3(brightness), 1.0);
+}
+```
+在 startup 函数里将存储原子计数器值的缓冲绑定到 GL_ATOMIC_COUNTER_BUFFER 与 GL_UNIFORM_BUFFER，这样子这块缓冲就可以同时用作原子计数器和一致区块了。
+
+在 render 函数里，先使用原子计数器进行计数，再读取一致区块内的原子计数器的值，来渲染物体：
+
+```rust
+# use gl::*;
+# use sb7::{application::*, vmath::*};
+# use std::{
+#   ffi::CString,
+#   mem::{size_of, size_of_val},
+#   ptr::{addr_of, null},
+# };
+# 
+# #[derive(Default)]
+# struct App {
+#   prog_counter: u32,
+#   prog_render: u32,
+#   vao: u32,
+#   vbo: u32,
+#   atombuf: u32,
+#   proj_mat: Mat4,
+#   max_area: f32,
+# }
+# 
+# impl Application for App {
+#   fn init(&self) -> AppConfig {
+#     AppConfig { width: 704,
+#                 height: 315,
+#                 ..Default::default() }
+#   }
+# 
+  fn startup(&mut self) {
+#     let vs_src = "
+#       #version 460 core
+#       
+#       in vec3 position;
+#       uniform mat4 trans;
+# 
+#       void main(void) {
+#         gl_Position = trans * vec4(position, 1.0);
+#       }";
+# 
+#     let vs_src = CString::new(vs_src).unwrap();
+# 
+#     let fs_counter_src = "
+#       #version 460 core
+# 
+#       layout (binding = 0, offset = 0) uniform atomic_uint area;
+#       out vec4 color;
+#       
+#       void main(void) {
+#         atomicCounterIncrement(area);
+#         color = vec4(1.0);
+#       }";
+# 
+#     let fs_counter_src = CString::new(fs_counter_src).unwrap();
+# 
+#     let fs_render_src = "
+#       #version 460 core
+#       
+#       layout (binding = 0) uniform area_block {
+#       uint counter_value;
+#       };
+#       
+#       out vec4 color;
+#       
+#       uniform float max_area;
+#       
+#       void main(void) {
+#         float brightness = clamp(float(counter_value) / max_area,
+#                                   0.0, 1.0);
+#         color = vec4(vec3(brightness), 1.0);
+#       }";
+#     let fs_render_src = CString::new(fs_render_src).unwrap();
+# 
+#     // 设置 shader
+#     unsafe {
+#       let vs = CreateShader(VERTEX_SHADER);
+#       ShaderSource(vs, 1, &vs_src.as_ptr(), null());
+#       CompileShader(vs);
+# 
+#       let fs_counter = CreateShader(FRAGMENT_SHADER);
+#       ShaderSource(fs_counter, 1, &fs_counter_src.as_ptr(), null());
+#       CompileShader(fs_counter);
+# 
+#       let fs_render = CreateShader(FRAGMENT_SHADER);
+#       ShaderSource(fs_render, 1, &fs_render_src.as_ptr(), null());
+#       CompileShader(fs_render);
+# 
+#       self.prog_counter = CreateProgram();
+#       AttachShader(self.prog_counter, vs);
+#       AttachShader(self.prog_counter, fs_counter);
+#       LinkProgram(self.prog_counter);
+# 
+#       self.prog_render = CreateProgram();
+#       AttachShader(self.prog_render, vs);
+#       AttachShader(self.prog_render, fs_render);
+#       LinkProgram(self.prog_render);
+# 
+#       DeleteShader(vs);
+#       DeleteShader(fs_counter);
+#       DeleteShader(fs_render);
+#     }
+# 
+#     // 设置 vao
+#     #[rustfmt::skip]
+#     let vertex_position : &[f32]= &[
+#       -0.25,  0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#       -0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#        0.25, -0.25,  0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25, -0.25,  0.25,
+# 
+#       -0.25,  0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#        0.25,  0.25,  0.25,
+# 
+#        0.25,  0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#       -0.25,  0.25, -0.25
+#     ];
+# 
+#     unsafe {
+#       let mut vao = 0;
+#       CreateVertexArrays(1, &mut vao);
+# 
+#       let mut vbo = 0;
+#       CreateBuffers(1, &mut vbo);
+#       NamedBufferData(vbo,
+#                       size_of_val(vertex_position) as _,
+#                       vertex_position.as_ptr() as _,
+#                       STATIC_DRAW);
+# 
+#       VertexArrayVertexBuffer(vao, 0, vbo, 0, 3 * size_of::<f32>() as i32);
+#       VertexArrayAttribFormat(vao, 0, 3, FLOAT, FALSE, 0);
+#       VertexArrayAttribBinding(vao, 0, 0);
+#       EnableVertexArrayAttrib(vao, 0);
+#       self.vao = vao;
+#       self.vbo = vbo;
+#     }
+# 
+#     // 设置存储 原子计数器 的 buffer
+#     unsafe {
+      let mut buf = 0;
+      CreateBuffers(1, &mut buf);
+      NamedBufferData(buf, size_of::<u32>() as _,
+                      &0u32 as *const u32 as _, DYNAMIC_COPY);
+# 
+      self.atombuf = buf;
+# 
+      BindBuffer(UNIFORM_BUFFER, buf);
+      BindBufferBase(UNIFORM_BUFFER, 0, buf);
+      BindBuffer(ATOMIC_COUNTER_BUFFER, buf);
+      BindBufferBase(ATOMIC_COUNTER_BUFFER, 0, buf);
+#     }
+# 
+#     // 初始化投影矩阵
+#     self.on_resize(704, 315);
+# 
+#     // 启用深度测试
+#     unsafe {
+#       Enable(DEPTH_TEST);
+#     }
+  }
+
+  fn render(&self, current_time: f64) {
+#     let Self { vao,
+#                proj_mat,
+#                prog_render,
+#                prog_counter,
+#                atombuf,
+#                max_area,
+#                .. } = self;
+# 
+#     unsafe {
+#       ClearBufferfv(COLOR, 0, [0.0, 0.0, 0.0f32].as_ptr());
+#       ClearBufferfv(DEPTH, 0, &1.0);
+#     }
+# 
+#     unsafe {
+#       BindVertexArray(*vao);
+#     }
+# 
+#     let current_time = current_time as f32;
+# 
+#     for i in 0..24 {
+#       let f = i as f32 + current_time * 0.3;
+# 
+#       let trans_mat = translate(0.0, 0.0, -6.0)
+#                       * rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0)
+#                       * rotate_with_axis(current_time * 21.0, 1.0, 0.0, 0.0)
+#                       * translate((2.1 * f).sin() * 2.0,
+#                                   (1.7 * f).cos() * 2.0,
+#                                   (1.3 * f).sin() * (1.5 * f).cos() * 2.0);
+#       let trans_mat = *proj_mat * trans_mat;
+# 
+#       unsafe {
+        ColorMask(FALSE, FALSE, FALSE, FALSE);
+        DepthMask(FALSE);
+
+        // 使用 prog_counter 计算面积
+        UseProgram(*prog_counter);
+# 
+#         let cptr = CString::new("trans").unwrap();
+#         let location = GetUniformLocation(*prog_counter, cptr.as_ptr());
+#         UniformMatrix4fv(location, 1, FALSE, addr_of!(trans_mat) as _);
+# 
+        // 重置原子计数
+        NamedBufferData(*atombuf,
+                        size_of::<u32>() as _,
+                        &0u32 as *const _ as _,
+                        DYNAMIC_COPY);
+# 
+        DrawArrays(TRIANGLES, 0, 36);
+
+        // 等待所有 shader 执行完毕
+        MemoryBarrier(UNIFORM_BARRIER_BIT);
+
+        ColorMask(TRUE, TRUE, TRUE, TRUE);
+        DepthMask(TRUE);
+
+        // 使用 prog_render 渲染
+        UseProgram(*prog_render);
+# 
+#         let cstr = CString::new("trans").unwrap();
+#         let location = GetUniformLocation(*prog_render, cstr.as_ptr());
+#         UniformMatrix4fv(location, 1, FALSE, addr_of!(trans_mat) as _);
+# 
+#         let cstr = CString::new("max_area").unwrap();
+#         let location = GetUniformLocation(*prog_render, cstr.as_ptr());
+#         Uniform1f(location, *max_area);
+# 
+        DrawArrays(TRIANGLES, 0, 36);
+#       }
+#     }
+  }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let aspect = w as f32 / h as f32;
+#     self.proj_mat = sb7::vmath::perspective(45.0, aspect, 0.1, 1000.0);
+#     self.max_area = (w * h) as f32 * 0.03;
+#   }
+# 
+#   fn shutdown(&self) {
+#     unsafe {
+#       DeleteProgram(self.prog_counter);
+#       DeleteProgram(self.prog_render);
+#       DeleteVertexArrays(1, &self.vao);
+#       DeleteBuffers(1, &self.vbo);
+#       DeleteBuffers(1, &self.atombuf);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+WebGL 里并没有原子计数器，这里只是使用 gl_FragCoord.z 值模拟上面代码的结果，毕竟跑起来的效果差不多。物体里摄像机越近，在屏幕空间上占据的像素点就越多，亮度越亮：
+
+{% raw %}
+<div class="demo_app" id="_ch5_1_1_atom_counter"></div>
+{% endraw %}
+
+### 原子计数器的同步访问
+
+- 原子计数器其实是缓冲区对象中的一个位置，当着色器执行时，他们的值可能驻留在GPU的特殊内存中，当着色器执行完毕时，原子计数器的值将被写回内存。
+- 原子计数器的递增和递减被认为是内存操作的一种形式，可能会受到之前描述的内存风险影响。
+
+`glMemoryBarrier` 可以将对原子计数器的访问与 OpenGL 管道的其他部分进行同步：
+
+```c
+glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+```
+
+- 这个函数调用确保了OpenGL 应用程序对缓冲区对象内的原子计数器进行修改，那么着色器会使用更新后的值。
+  - 在将数据写入缓冲区时，应该调用这个函数，同步着色器访问到的值。
+
+glsl 内部类似的函数：
+
+```glsl
+memoryBarrierAtomicCounter();
+```
+这个函数会等待，直到对原子计数器的操作结束后才退出。
+
+## 纹理
+
+- 一种结构化的存储形式，着色器可以对其进行读写操作
+- 常用于存储图像数据
+- 最常见的纹理布局是二维的，但是纹理也可以在一维或三维布局、数组形式（多个纹理堆叠在一起形成一个逻辑对象）、立方体中创建
+
+### 创建、初始化纹理
+
+1. 创建纹理，设置纹理类型（glCreateTextures）
+2. 设置存储的图像的大小，分配空间（glTexStorage2D
+
+使用 glCreateTextures() 创建纹理对象，然后使用glTexStorage2D()函数为纹理分配存储空间，使用glBindTexture()将其绑定到GL_TEXTURE_2D目标：
+
+```rust
+use gl::*;
+let mut texture = 0;
+
+// 创建纹理
+CreateTextures(TEXTURE_2D, 1, &mut texture);
+
+// 为纹理分配空间
+TextureStorage2D(texture,   // 要分配空间的纹理对象
+                 1,         // 分级细化等级
+                 RGBA32F,   // 纹理的数据格式
+                 256, 256); // 纹理宽、高
+
+// 绑定纹理目标
+BindTexture(TEXTURE_2D, texture);
+```
+使用 glTexSubImage2D() 向纹理对象写入数据：
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App;
+# 
+# impl App {
+#   fn generate_texture(&self, data: &mut [f32], width: usize, height: usize) {
+#     assert_eq!(data.len(), width * height * 4);
+#     for y in 0..height {
+#       for x in 0..width {
+#         data[(y * width + x) * 4 + 0] = ((x & y) & 0xFF) as f32 / 255.0;
+#         data[(y * width + x) * 4 + 1] = ((x | y) & 0xFF) as f32 / 255.0;
+#         data[(y * width + x) * 4 + 2] = ((x ^ y) & 0xFF) as f32 / 255.0;
+#         data[(y * width + x) * 4 + 3] = 1.0;
+#       }
+#     }
+#   }
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+      use gl::*;
+#       let mut texture = 0;
+# 
+#       // 创建纹理
+#       CreateTextures(TEXTURE_2D, 1, &mut texture);
+# 
+#       // 分配空间
+#       TextureStorage2D(texture,   // 要分配空间的纹理对象
+#                        1,         // 分级细化等级
+#                        RGBA32F,   // 数据格式
+#                        256, 256); // 纹理宽、高
+# 
+#       // 绑定纹理目标
+#       BindTexture(TEXTURE_2D, texture);
+# 
+      // 在堆上分配空间，这段内存会在离开作用域时自动释放
+      let mut data = Box::new([0f32; 256 * 256 * 4]);
+
+      // generate_texture 函数用来向 data 填充数据
+      self.generate_texture(&mut data[..], 256, 256);
+
+      // 将生成的数据写入到纹理对象
+      TextureSubImage2D(texture,
+                        0,        // 细节等级，等级0代表基本图形级别
+                        0, 0,     // 偏移量 0, 0
+                        256, 256, // 宽 x 高
+                        RGBA,     // 四通道数据
+                        FLOAT,    // 数据类型为浮点数
+                        data.as_ptr() as _)
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+```
+glClearTexSubImage() 函数也可以使用数据初始化纹理：
+
+```c
+void glClearTexSubImage(GLuint texture,
+                        GLint level,
+                        GLint xoffset,
+                        GLint yoffset,
+                        GLint zoffset,
+                        GLsizei width,
+                        GLsizei height,
+                        GLsizei depth,
+                        GLenum format,
+                        GLenum type,
+                        const void * data);
+```
+- 纹理的维度可以从传递的对象里推断出来
+- level：分级细化级别
+- xoffset、yoffset 和 zoffset：在纹理的起始偏移量
+- width、height和depth：写入区域
+- format和type：与glTexSubImage2D()完全相同
+- data：被假定为单个texel值的数据，然后在整个纹理中复制这些数据
+
+texel：纹素（英語：Texel，即texture element或texture pixel的合成字）是纹理元素的简称，它是计算机图形纹理空间中的基本单元。如同图像是由像素排列而成，纹理是由纹素排列表示的。 
+
+### 纹理目标和类型
+
+| 纹理目标（GL_TEXTURE_*） |  描述             |
+|:-----------------------|:----------------|
+| 1D                     |  一维纹理         |
+| 2D                     |  二维纹理         |
+| 3D                     |  三维纹理         |
+| RECTANGLE              |  矩形纹理         |
+| 1D_ARRAY               |  一维数组纹理      |
+| 2D_ARRAY               |  二维数组纹理      |
+| CUBE_MAP               |  立方体贴图纹理     |
+| CUBE_MAP_ARRAY         |  立方体贴图数组纹理  |
+| BUFFER                 |  缓冲区纹理        |
+| 2D_MULTISAMPLE         |  二维多重采样纹理   |
+| 2D_MULTISAMPLE_ARRAY   |  二维数组多重采样纹理|
+
+- GL_TEXTURE_2D：最常使用的纹理，标准二维图像，代表一张图片
+- GL_TEXTURE_1D、GL_TEXTURE_3D：一维和三维纹理
+  - GL_TEXTURE_1D 可以看成高度为 1 的二维纹理
+  - GL_TEXTURE_3D 可以用来表示**体积**，内部使用三维纹理坐标
+- GL_TEXTURE_RECTANGLE：是二维纹理的特例，它们在着色器中的读取方式和它们支持的参数方面有细微的差异。
+- GL_TEXTURE_1D_ARRAY、GL_TEXTURE_2D_ARRAY：表示聚集到单个对象中的纹理图像数组
+- GL_TEXTURE_CUBE_MAP：立方体贴图纹理，形成一个立方体的六个正方形图像的集合，可以用来模拟光照环境
+- GL_TEXTURE_CUBE_MAP_ARRAY：和 GL_TEXTURE_1D_ARRAY、GL_TEXTURE_2D_ARRAY 类似，表示一个立方体贴图数组的纹理
+- GL_TEXTURE_BUFFER：缓冲区纹理、一种特殊类型的纹理，类似于一维纹理，只不过其存储是由缓冲区对象表示的。最大尺寸可以比一维纹理大得多。
+- GL_TEXTURE_2D_MULTISAMPLE、GL_TEXTURE_2D_MULTISAMPLE_ARRAY：用于多重采样抗锯齿（MSAA），提高图像质量
+
+### 在着色器里读取纹理数据
+
+- 在创建并向纹理写入数据后，可以在着色器读取纹理数据来为片段着色
+- 着色器中代表纹理的数据类型为采样器，不同的纹理类型对应不同的采样器类型
+  - 二维纹理的采样器类型：Sampler2D
+
+在声明采样器变量后，通过 texture() 函数读取纹理坐标下的数据：
+
+```glsl
+#version 460 core
+
+uniform sampler2D s;
+out vec4 color;
+
+void main(void) {
+  color = texture(s, gl_FragCoord.xy / textureSize(s, 0));
+}
+```
+{% raw %}
+<div class="demo_app" id="_ch5_4_simpletexture"></div>
+{% endraw %}
+
+#### 采样器类型
+
+每种纹理对应的采样器：
+
+| 纹理目标                          | 采样器类型         |
+|:--------------------------------|:-----------------|
+| GL_TEXTURE_1D                   | sampler1D        |
+| GL_TEXTURE_2D                   | sampler2D        |
+| GL_TEXTURE_3D                   | sampler3D        |
+| GL_TEXTURE_RECTANGLE            | sampler2DRect    |
+| GL_TEXTURE_1D_ARRAY             | sampler1DArray   |
+| GL_TEXTURE_2D_ARRAY             | sampler2DArray   |
+| GL_TEXTURE_CUBE_MAP             | samplerCube      |
+| GL_TEXTURE_CUBE_MAP_ARRAY       | samplerCubeArray |
+| GL_TEXTURE_BUFFER               | samplerBuffer    |
+| GL_TEXTURE_2D_MULTISAMPLE       | sampler2DMS      |
+| GL_TEXTURE_2D_MULTISAMPLE_ARRAY | sampler2DMSArray |
+
+纹理存储的数据类型与采样器的关系：
+
+- 存储浮点数据的纹理：sampler1D,...
+- 存储有符号整数的纹理：添加前缀i，isampler1D, ...
+- 存储无符号整数的纹理：添加前缀u，usampler1D, ...
+
+内置函数 texelFetch() 读取着色器中的纹理：
+
+```glsl
+vec4 texelFetch(sampler1D s, int P, int lod);
+vec4 texelFetch(sampler2D s, ivec2 P, int lod);
+ivec4 texelFetch(isampler2D s, ivec2 P, int lod);
+uvec4 texelFetch(usampler3D s, ivec3 P, int lod);
+```
+- s：纹理的采样器变量
+- P：纹理坐标
+- lod：分级细化等级
+
+虽然纹理对象的数据格式不同，这些函数都返回四维向量。如果纹理通道小于 4 (RGBA)，则绿色通道和蓝色通道的默认值为0，而alpha通道的默认值为1
+
+内置函数 textureSize() 用来查询纹理尺寸：
+
+```glsl
+int textureSize(sampler1D sampler, int lod);
+ivec2 textureSize(sampler2D sampler, int lod);
+ivec3 textureSize(gsampler3D sampler, int lod);
+```
+
+查询多重采样纹理的采样数：
+
+```glsl
+int textureSamples(sampler2DMS sampler);
+```
+
+### 从文件载入纹理
+
+- ktx（Khronos纹理格式）：专门为存储 OpenGL 纹理的东西而设计的。
+- .ktx文件包含了大多数需要传递给 OpenGL 的参数，以便直接从文件加载纹理。
+
+载入：
+
+```rust
+let tex = sb7::ktx::file::load("media/textures/tree.ktx").unwrap().0;
+```
+#### 纹理坐标
+
+在本章前面的简单示例中，我们使用当前片段的窗口空间坐标作为从纹理读取的位置。
+
+- 可以使用任何你想要的任何值
+- 纹理坐标一般会作为顶点属性传入顶点着色器，然后输出到片段着色器：
+
+```glsl
+#version 450 core
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+layout (location = 0) in vec4 position;
+layout (location = 4) in vec2 tc;
+out VS_OUT
+{
+  vec2 tc;
+} vs_out;
+void main(void)
+{
+  // Calculate the position of each vertex
+  vec4 pos_vs = mv_matrix * position;
+  // Pass the texture coordinate through unmodified
+  vs_out.tc = tc;
+  gl_Position = proj_matrix * pos_vs;
+}
+```
+```glsl
+#version 450 core
+layout (binding = 0) uniform sampler2D tex_object;
+// Input from vertex shader
+in VS_OUT
+{
+  vec2 tc;
+} fs_in;
+// Output to framebuffer
+out vec4 color;
+void main(void)
+{
+  // Simply read from the texture at the (scaled) coordinates and
+  // assign the result to the shader's output.
+  color = texture(tex_object, fs_in.tc * vec2(3.0, 1.0));
+}
+```
+
+通过向每个顶点传递纹理坐标，我们可以将纹理环绕在物体周围。
+
+纹理坐标由艺术家使用建模程序手工分配，并存储在目标文件中。如果我们将一个简单的棋盘格图案加载到一个纹理中，并将其应用到一个对象上，我们可以看到纹理是如何缠绕在它周围的:
+
+{% raw %}
+<div class="demo_app" id="_ch5_5_simpletexcoords"></div>
+{% endraw %}
+
+
+### 控制纹理数据的读取方式
+
+OpenGL在如何从纹理中读取数据并将其返回给着色器方面提供了很大的灵活性。通常，纹理坐标是规范化的--也就是说，它们的范围在0.0和1.0之间。OpenGL允许您控制当您提供的纹理坐标超出此范围时会发生什么。这被称为采样器的包装模式。另外，你可以决定如何计算真实样本之间的值。这被称为采样器的过滤模式。控制采样器的包装和过滤模式的参数存储在采样器对象中：
+
+创建采样器对象：
+
+```c
+void glCreateSamplers(GLsizei n, GLuint * samplers);
+```
+设置采样器参数：
+
+```c
+void glSamplerParameteri(GLuint sampler,
+                         GLenum pname,
+                         GLint param);
+void glSamplerParameterf(GLuint sampler,
+                         GLenum pname,
+                         GLfloat param);
+```
+
+您将需要绑定一个采样器对象才能使用它，但在这种情况下，您将它绑定到一个纹理单元，就像您将纹理绑定到一个纹理单元一样。用于将采样器对象绑定到纹理单元之一的函数是glBindSampler()，其原型是:
+
+```c
+void glBindSampler(GLuint unit, GLuint sampler);
+```
+
+```rust
+use gl::*;
+# use sb7::application::*;
+# use std::{ffi::CString, ptr::addr_of};
+# 
+# #[derive(Default)]
+# struct Uniforms {
+#   mv_matrix:   i32,
+#   proj_matrix: i32,
+# }
+# 
+# #[derive(Default)]
+struct App {
+#   tex_object:     [u32; 2],
+#   tex_index:      usize,
+#   render_prog:    u32,
+#   uniforms:       Uniforms,
+#   object:         sb7::object::Object,
+  sampler_object: u32,
+}
+# 
+# impl Application for App {
+#   fn init(&self) -> AppConfig {
+#     AppConfig { title: "OpenGL SuperBible - Texture Coordinates".into(),
+#                 ..Default::default() }
+#   }
+# 
+#   fn startup(&mut self) {
+#     macro_rules! tex_data {
+#       (@a W) => ([ 0xFF, 0xFF, 0xFF, 0xFFu8 ]);
+#       (@a B) => ([ 0x00, 0x00, 0x00, 0x00u8 ]);
+#       ($($x: ident),+ $(,)?) => ([$(tex_data!(@a $x),)*].concat());
+#     }
+# 
+#     let tex_data = tex_data! {
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#       B, W, B, W, B, W, B, W, B, W, B, W, B, W, B, W,
+#       W, B, W, B, W, B, W, B, W, B, W, B, W, B, W, B,
+#     };
+# 
+#     unsafe {
+#       GenTextures(1, &mut self.tex_object[0]);
+#       BindTexture(TEXTURE_2D, self.tex_object[0]);
+#       TexStorage2D(TEXTURE_2D, 1, RGB8, 16, 16);
+#       TexSubImage2D(TEXTURE_2D, 0, 0, 0, 16, 16,
+#                     RGBA, UNSIGNED_BYTE,
+#                     tex_data[..].as_ptr() as _);
+# 
+      GenSamplers(1, &mut self.sampler_object);
+      SamplerParameteri(self.sampler_object,TEXTURE_MIN_FILTER,
+                        NEAREST as _);
+      SamplerParameteri(self.sampler_object, TEXTURE_MAG_FILTER,
+                        NEAREST as _);
+#     }
+# 
+#     self.tex_object[1] = 
+#       sb7::ktx::file::load("media/textures/pattern1.ktx").unwrap().0;
+# 
+#     self.object.load("media/objects/torus_nrms_tc.sbm");
+# 
+#     self.load_shaders();
+# 
+#     unsafe {
+#       Enable(DEPTH_TEST);
+#       DepthFunc(LEQUAL);
+#     }
+# 
+#     let AppConfig { width, height, .. } = AppConfig::default();
+#     self.on_resize(width as _, height as _);
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let grey = [0.2, 0.2, 0.2, 1.0f32].as_ptr();
+#     let ones = [1.0f32].as_ptr();
+# 
+#     unsafe {
+#       ClearBufferfv(COLOR, 0, grey);
+#       ClearBufferfv(DEPTH, 0, ones);
+# 
+#       BindTexture(TEXTURE_2D, self.tex_object[self.tex_index]);
+      BindSampler(0, self.sampler_object);
+# 
+#       let mv_proj =
+#         sb7::vmath::translate(0.0, 0.0, -3.0)
+#         * sb7::vmath::rotate_with_axis(current_time as f32 * 19.3,
+#                                        0.0, 1.0, 0.0)
+#         * sb7::vmath::rotate_with_axis(current_time as f32 * 21.1,
+#                                        0.0, 0.0, 1.0);
+# 
+#       UniformMatrix4fv(self.uniforms.mv_matrix, 1, FALSE,
+#                        addr_of!(mv_proj) as _);
+# 
+#       self.object.render();
+#     }
+#   }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let proj_matrix = sb7::vmath::perspective(60.0,
+#                                               w as f32 / h as f32,
+#                                               0.1, 1000.0);
+#     unsafe {
+#       UniformMatrix4fv(self.uniforms.proj_matrix,
+#                        1, FALSE, addr_of!(proj_matrix) as _);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       DeleteTextures(2, self.tex_object.as_ptr());
+#       DeleteProgram(self.render_prog);
+#       DeleteSamplers(1, &self.sampler_object);
+#       self.object.free();
+#     }
+#   }
+# 
+#   fn on_key(&mut self, key: glfw::Key, press: glfw::Action) {
+#     if let glfw::Action::Press = press {
+#       match key {
+#         glfw::Key::R => self.load_shaders(),
+#         glfw::Key::T => {
+#           self.tex_index += 1;
+#           if self.tex_index > 1 {
+#             self.tex_index = 0;
+#           }
+#         }
+#         _ => {}
+#       }
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+# 
+# impl App {
+#   fn load_shaders(&mut self) {
+#     if self.render_prog != 0 {
+#       unsafe { DeleteProgram(self.render_prog) };
+#     }
+# 
+#     self.render_prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::load("media/shaders/simpletexcoords/render.vs.glsl", 
+#                         VERTEX_SHADER, true),
+#       sb7::shader::load("media/shaders/simpletexcoords/render.fs.glsl", 
+#                         FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     let location = |name: &str| unsafe {
+#       let name = CString::new(name).unwrap();
+#       GetUniformLocation(self.render_prog, name.as_ptr())
+#     };
+# 
+#     self.uniforms.mv_matrix = location("mv_matrix");
+#     self.uniforms.proj_matrix = location("proj_matrix");
+# 
+#     unsafe {
+#       UseProgram(self.render_prog);
+#     }
+#   }
+# }
+```
+
+glBindSampler（）不是使用纹理目标，而是使用它应该绑定sampler对象的纹理单元的索引。sampler对象和绑定到给定纹理单元的纹理对象一起形成了一组完整的数据和参数，这些数据和参数是根据着色器的要求构造纹理所需的。通过从纹理数据中分离纹理采样器的参数，三个重要的行为成为可能:
+
+- 您可以对大量纹理使用相同的采样参数集，而不必为每个纹理指定这些参数
+- 您可以更改绑定到纹理单元的纹理，而无需更新采样器参数。
+- 您可以同时使用多组采样器参数从同一纹理中读取
+
+尽管非平凡的应用程序可能会选择使用它们自己的采样器对象，但每个纹理都有效地包含一个嵌入的采样器对象，当没有采样器对象绑定到相应的纹理单元时，该采样器对象包括用于该纹理的采样参数。您可以将其视为纹理的默认采样参数。若要访问存储在纹理对象内的采样器对象，请调用：
+
+```c
+void glTextureParameterf(GLuint texture,
+                         GLenum pname,
+                         GLfloat param);
+void glTextureParameteri(GLuint texture,
+                         GLenum pname,
+                         GLint param);
+```
+如果你想在一个着色器中使用多个纹理，你需要创建多个采样器制服，并将它们设置为引用不同的纹理单元。您还需要同时将多个纹理绑定到上下文中。为了实现这一点，OpenGL支持多个纹理单元。可以通过使用GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS参数调用glGetIntegerv（）来查询所支持的单元数，如:
+
+```c
+GLint units;
+glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &units);
+```
+
+这将告诉你最大数量的纹理单位，可以访问所有着色器阶段在任何一个时间。要将纹理绑定到特定的纹理单元，您需要调用glBindTextureUnit()，而不是像您到目前为止所做的那样调用glBindTextureUnit，它的原型是
+
+```c
+void glBindTextureUnit(GLuint unit,
+                       GLuint texture)
+```
+
+这里，unit是要绑定纹理的单元的从零开始的索引，texture是要绑定的纹理对象的名称。例如，我们可以通过执行以下操作绑定多个纹理：
+
+```c
+GLuint textures[3];
+
+// Create three 2D textures
+glCreateTextures(3, GL_TEXTURE_2D, &textures);
+
+// Bind the three textures to the first three texture units
+glBindTextureUnit(0, textures[0]);
+glBindTextureUnit(1, textures[1]);
+glBindTextureUnit(2, textures[2]);
+```
+
+一旦你把多个纹理绑定到你的上下文中，你需要让你的着色器中的采样器制服参考不同的单位。采样器（表示一个纹理和一组采样参数）由着色器中的统一变量表示。如果您不初始化它们，它们将在默认情况下引用单元0。对于使用单个纹理的简单应用程序来说，这可能很好（您会注意到，到目前为止，我们在示例中已经满足了默认情况），但在更复杂的应用程序中，制服需要初始化以引用正确的纹理单元。为此，可以在着色器编译时使用着色器代码中的绑定布局限定符初始化其值。要创建三个采样器制服，涉及纹理单元0、1和2，我们可以编写:
+
+```glsl
+layout (binding = 0) uniform sampler2D foo;
+layout (binding = 1) uniform sampler2D bar;
+layout (binding = 2) uniform sampler2D baz;
+```
+
+#### 纹理过滤
+
+纹理被缩放时使用的缩放方法，参数：GL_TEXTURE_MIN_FILTER / GL_TEXTURE_MAG_FILTER：
+
+- GL_NEAREST：邻近缩放？
+- GL_LINEAR：平滑缩放
+
+{% raw %}
+<div class="demo_app" id="_ch5_6_texturefilter"></div>
+{% endraw %}
+
+#### 分级细化纹理
+
+{% raw %}
+<div class="demo_app" id="_ch5_7_0_tunnel_scintillation"></div>
+{% endraw %}
+
+#### 分级细化纹理过滤
+
+#### 分级细化纹理生成
+
+#### 分级细化纹理应用
+
+{% raw %}
+<div class="demo_app" id="_ch5_7_tunnel"></div>
+{% endraw %}
+
+#### 环绕方式
+
+{% raw %}
+<div class="demo_app" id="_ch5_8_wrapmodes"></div>
+{% endraw %}
+
+{% raw %}
+<div class="demo_app" id="_ch5_9_mirrorclampedge"></div>
+{% endraw %}
+
+### 数组纹理
+
+{% raw %}
+<div class="demo_app" id="_ch5_10_alienrain"></div>
+{% endraw %}
+
+### 在着色器中向纹理写入数据
+
+### 同步存储图像
+
+### 纹理压缩
+
+### 纹理视图
+
+{% raw %}
+<script type="module" src="/js/openglsb7th/ch5/index.js">
+</script>
+{% endraw %}
