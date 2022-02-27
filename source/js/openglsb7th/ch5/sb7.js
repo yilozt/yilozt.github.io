@@ -199,11 +199,11 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_18(arg0, arg1) {
-    wasm._dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h751ad488ccdb043e(arg0, arg1);
+    wasm._dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__ha231c3a8b0f4b715(arg0, arg1);
 }
 
 function __wbg_adapter_21(arg0, arg1, arg2) {
-    wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hbd96ec83d5a41329(arg0, arg1, addHeapObject(arg2));
+    wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__he90b94fa9d74c0a9(arg0, arg1, addHeapObject(arg2));
 }
 
 function isLikeNone(x) {
@@ -259,9 +259,12 @@ export class _ch3_1_vertexattr {
         wasm._ch3_1_vertexattr_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch3_1_vertexattr_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch3_1_vertexattr_stop(ptr0, len0);
     }
 }
 /**
@@ -290,9 +293,12 @@ export class _ch3_2_transdata {
         wasm._ch3_2_transdata_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch3_2_transdata_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch3_2_transdata_stop(ptr0, len0);
     }
 }
 /**
@@ -321,9 +327,12 @@ export class _ch5_10_alienrain {
         wasm._ch5_10_alienrain_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_10_alienrain_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_10_alienrain_stop(ptr0, len0);
     }
 }
 /**
@@ -352,9 +361,12 @@ export class _ch5_1_0_uniform_mat {
         wasm._ch5_1_0_uniform_mat_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_1_0_uniform_mat_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_1_0_uniform_mat_stop(ptr0, len0);
     }
 }
 /**
@@ -383,9 +395,12 @@ export class _ch5_1_1_atom_counter {
         wasm._ch5_1_1_atom_counter_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_1_1_atom_counter_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_1_1_atom_counter_stop(ptr0, len0);
     }
 }
 /**
@@ -414,9 +429,12 @@ export class _ch5_1_vao {
         wasm._ch5_1_vao_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_1_vao_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_1_vao_stop(ptr0, len0);
     }
 }
 /**
@@ -445,9 +463,12 @@ export class _ch5_2_spinningcube {
         wasm._ch5_2_spinningcube_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_2_spinningcube_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_2_spinningcube_stop(ptr0, len0);
     }
 }
 /**
@@ -476,9 +497,12 @@ export class _ch5_3_spinningcubes {
         wasm._ch5_3_spinningcubes_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_3_spinningcubes_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_3_spinningcubes_stop(ptr0, len0);
     }
 }
 /**
@@ -507,9 +531,12 @@ export class _ch5_4_simpletexture {
         wasm._ch5_4_simpletexture_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_4_simpletexture_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_4_simpletexture_stop(ptr0, len0);
     }
 }
 /**
@@ -538,9 +565,12 @@ export class _ch5_5_simpletexcoords {
         wasm._ch5_5_simpletexcoords_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_5_simpletexcoords_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_5_simpletexcoords_stop(ptr0, len0);
     }
 }
 /**
@@ -569,9 +599,12 @@ export class _ch5_6_texturefilter {
         wasm._ch5_6_texturefilter_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_6_texturefilter_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_6_texturefilter_stop(ptr0, len0);
     }
 }
 /**
@@ -600,9 +633,12 @@ export class _ch5_7_0_tunnel_scintillation {
         wasm._ch5_7_0_tunnel_scintillation_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_7_0_tunnel_scintillation_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_7_0_tunnel_scintillation_stop(ptr0, len0);
     }
 }
 /**
@@ -631,9 +667,12 @@ export class _ch5_7_tunnel {
         wasm._ch5_7_tunnel_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_7_tunnel_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_7_tunnel_stop(ptr0, len0);
     }
 }
 /**
@@ -662,9 +701,12 @@ export class _ch5_8_wrapmodes {
         wasm._ch5_8_wrapmodes_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_8_wrapmodes_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_8_wrapmodes_stop(ptr0, len0);
     }
 }
 /**
@@ -693,9 +735,12 @@ export class _ch5_9_mirrorclampedge {
         wasm._ch5_9_mirrorclampedge_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._ch5_9_mirrorclampedge_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._ch5_9_mirrorclampedge_stop(ptr0, len0);
     }
 }
 /**
@@ -724,9 +769,12 @@ export class _default {
         wasm._default_run(!isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr0, len0);
     }
     /**
+    * @param {string | undefined} id
     */
-    static stop() {
-        wasm._default_stop();
+    static stop(id) {
+        var ptr0 = isLikeNone(id) ? 0 : passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm._default_stop(ptr0, len0);
     }
 }
 
@@ -956,6 +1004,9 @@ async function init(input) {
         const ret = getObject(arg0).performance;
         return isLikeNone(ret) ? 0 : addHeapObject(ret);
     };
+    imports.wbg.__wbg_cancelAnimationFrame_7c55daff0068fc2b = function() { return handleError(function (arg0, arg1) {
+        getObject(arg0).cancelAnimationFrame(arg1);
+    }, arguments) };
     imports.wbg.__wbg_requestAnimationFrame_0c71cd3c6779a371 = function() { return handleError(function (arg0, arg1) {
         const ret = getObject(arg0).requestAnimationFrame(getObject(arg1));
         return ret;
@@ -964,13 +1015,18 @@ async function init(input) {
         const ret = getObject(arg0).now();
         return ret;
     };
-    imports.wbg.__wbg_length_5ced7bdab8b3e91f = function(arg0) {
-        const ret = getObject(arg0).length;
-        return ret;
+    imports.wbg.__wbg_get_5f70d505e9ea72a0 = function(arg0, arg1, arg2, arg3) {
+        const ret = getObject(arg1)[getStringFromWasm0(arg2, arg3)];
+        var ptr0 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        getInt32Memory0()[arg0 / 4 + 1] = len0;
+        getInt32Memory0()[arg0 / 4 + 0] = ptr0;
     };
-    imports.wbg.__wbg_get_a307c30b5f5df814 = function(arg0, arg1) {
-        const ret = getObject(arg0)[arg1 >>> 0];
-        return isLikeNone(ret) ? 0 : addHeapObject(ret);
+    imports.wbg.__wbg_set_254ff276dc15c151 = function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
+        getObject(arg0)[getStringFromWasm0(arg1, arg2)] = getStringFromWasm0(arg3, arg4);
+    }, arguments) };
+    imports.wbg.__wbg_delete_baa43c91f7868234 = function(arg0, arg1, arg2) {
+        delete getObject(arg0)[getStringFromWasm0(arg1, arg2)];
     };
     imports.wbg.__wbg_target_e560052e31e4567c = function(arg0) {
         const ret = getObject(arg0).target;
@@ -998,13 +1054,17 @@ async function init(input) {
         const ret = getObject(arg0).getContext(getStringFromWasm0(arg1, arg2));
         return isLikeNone(ret) ? 0 : addHeapObject(ret);
     }, arguments) };
+    imports.wbg.__wbg_length_5ced7bdab8b3e91f = function(arg0) {
+        const ret = getObject(arg0).length;
+        return ret;
+    };
+    imports.wbg.__wbg_get_a307c30b5f5df814 = function(arg0, arg1) {
+        const ret = getObject(arg0)[arg1 >>> 0];
+        return isLikeNone(ret) ? 0 : addHeapObject(ret);
+    };
     imports.wbg.__wbg_getElementById_b30e88aff96f66a1 = function(arg0, arg1, arg2) {
         const ret = getObject(arg0).getElementById(getStringFromWasm0(arg1, arg2));
         return isLikeNone(ret) ? 0 : addHeapObject(ret);
-    };
-    imports.wbg.__wbg_instanceof_Element_c9423704dd5d9b1d = function(arg0) {
-        const ret = getObject(arg0) instanceof Element;
-        return ret;
     };
     imports.wbg.__wbg_setinnerHTML_c80d74e59f460154 = function(arg0, arg1, arg2) {
         getObject(arg0).innerHTML = getStringFromWasm0(arg1, arg2);
@@ -1019,6 +1079,14 @@ async function init(input) {
     }, arguments) };
     imports.wbg.__wbg_log_fbd13631356d44e4 = function(arg0) {
         console.log(getObject(arg0));
+    };
+    imports.wbg.__wbg_instanceof_HtmlElement_d3e8f1c1d6788b24 = function(arg0) {
+        const ret = getObject(arg0) instanceof HTMLElement;
+        return ret;
+    };
+    imports.wbg.__wbg_dataset_b83a7d0c78e95891 = function(arg0) {
+        const ret = getObject(arg0).dataset;
+        return addHeapObject(ret);
     };
     imports.wbg.__wbg_instanceof_HtmlInputElement_8969541a2a0bded0 = function(arg0) {
         const ret = getObject(arg0) instanceof HTMLInputElement;
@@ -1099,12 +1167,12 @@ async function init(input) {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper146 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 14, __wbg_adapter_18);
+    imports.wbg.__wbindgen_closure_wrapper291 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 94, __wbg_adapter_18);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper147 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 14, __wbg_adapter_21);
+    imports.wbg.__wbindgen_closure_wrapper292 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 94, __wbg_adapter_21);
         return addHeapObject(ret);
     };
 

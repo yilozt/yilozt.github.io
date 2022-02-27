@@ -5,12 +5,9 @@ categories: 学习笔记
 date: 2022-01-23 13:35:55
 ---
 
-这是自己阅读 OpenGL 超级宝典（第七版）的笔记，源码：
-- OpenGL 超级宝典（第七版）随书源码：https://github.com/openglsuperbible/sb7code
-  - 随书资源文件：http://openglsuperbible.com/files/superbible7-media.zip
-  - 自己尝试的 Rust 实现： https://github.com/yilozt/sb7coders
-- 自己尝试的 WebGL + Rust 的展示 demo: https://github.com/yilozt/sb7coders/tree/webgl
-  - 在线示例: https://yilozt.github.io/sb7coders
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记。
+- 随书源码：https://github.com/openglsuperbible/sb7code
+- demo： https://github.com/yilozt/sb7coders
 
 这一章主要介绍了 OpenGL 中两种重要的数据形式：缓冲（Buffer）和纹理（Texture）：
 
@@ -21,7 +18,7 @@ date: 2022-01-23 13:35:55
 
 一般用来存储顶点数据，然后作为顶点着色器的输入。也可以作为一般容器，用来在 OpenGL 程序和着色器之间传递数据。
 
-### 创建缓冲区对象
+### 创建缓冲区对象 / 分配空间
 
 一般使用 `glCreateBuffers() / glGenBuffers()`，这两个函数功能、原型相同：
 
@@ -47,14 +44,14 @@ gl::CreateBuffers(3, buf.as_mut_ptr());
 ```
 OpenGL 里使用 GLuint 变量来代表通过 `glCreate...() / glGen...()` 创建的对象。
 
-创建缓冲区对象之后，可以通过 `glBindBuffer()` 将对象绑定到当前的 OpenGL 环境中：
+创建缓冲区对象之后，可以通过 `glBindBuffer()` 将对象绑定到当前 OpenGL 环境中：
 
 ```c
 void glBindBuffer(GLenum target, GLuint buffer);
 ```
-- `target` 被称为绑定点（靶点）
-  - 最常见的 target 应该就是 `GL_ARRAY_BUFFER` 了，将缓冲区作为顶点着色器的输入时就需要绑到这个 target 上
-- `buffer` 注意类型是 GLuint， 即之前 `glCreate...() / glGen...()` 返回的 GLuint 变量（创建的对象）
+- `target` 称为绑定点（靶点）
+  - 最常用的 target 应该就是 `GL_ARRAY_BUFFER` 了，用来将缓冲区作为顶点着色器的输入
+- `buffer` 类型是 GLuint， 即之前 `glCreate...() / glGen...()` 返回的 GLuint 变量（创建的对象）
 
 ```rust
 let mut buf = 0;
@@ -92,10 +89,9 @@ void glNamedBufferStorage(GLuint buffer,
 - `data`：用来初始化（复制到） buffer 的数据，可以传递 null，这样就不会复制任何数据，如果要传入 data 对 buffer 进行初始化，`data` 的大小必须大于等于 `size` 字节
 - `flags`：只起到给 OpenGL 提供信息的作用，让 OpenGL 分配符合预期的内存
 
-
 在分配内存后，无法再修改缓冲区的 size 和 flag 属性。只能将缓冲区销毁后重新创建。
 
-比如要给 buffer 分配 100MB 的内存空间:
+给缓冲区分配 100MB 的内存空间:
 
 ```rust
 # use sb7::application::Application;
@@ -129,7 +125,7 @@ void glNamedBufferStorage(GLuint buffer,
 #   App.run()
 # }
 ```
-调用 `glNamedBufferStorage()` 之前用 nvidia-smi 查询显存：
+调用 `glNamedBufferStorage()` 之前用 `nvidia-smi` 命令查询显存：
 
 ```
 +-----------------------------------------------------------------------------+
@@ -140,7 +136,7 @@ void glNamedBufferStorage(GLuint buffer,
 |    0   N/A  N/A      3035      G   target/debug/test                   2MiB |
 +-----------------------------------------------------------------------------+
 ```
-调用 `glNamedBufferStorage()` 之后用 nvidia-smi 查询显存：
+调用 `glNamedBufferStorage()` 之后用 `nvidia-smi` 命令查询显存：
 
 ```
 +-----------------------------------------------------------------------------+
@@ -152,12 +148,44 @@ void glNamedBufferStorage(GLuint buffer,
 +-----------------------------------------------------------------------------+
 ```
 
-应用的显存占用从 2M 增加到了 200M，说明缓冲区对象的内存空间其实是分配内显存里的。
+显存占用从 2M 增加到了 200M，说明缓冲区对象的存储空间其实是分配内显存里的。
+
+如果要使用 `glBufferStorage()` 的话就需要将缓冲区绑定到靶点上：
+
+```rust
+use std::ptr::null;
+let mut buf = 0;
+
+// 100MB = 100 * 1024 * 1024 Btye
+let size = 100 * 1024 * 1024;
+
+gl::CreateBuffers(1, &mut buf);
+gl::BindBuffer(gl::ARRAY_BUFFER, buf)
+gl::BufferStorage(gl::ARRAY_BUFFER, buf, size as _, null(),
+                  gl::DYNAMIC_STORAGE_BIT);
+```
+这两种方法功能一致。
+
+`gl[Named]BufferStorage()` 的 `flag` 参数可能的取值：
+
+| 标志                              | 说明                                               |
+|:---------------------------------|:----------------------------------------------------|
+| GL_DYNAMIC_STORAGE_BIT           | 可以直接更新缓冲区的数据                                |
+| GL_MAP_READ_BIT                  | 缓冲区映射时，可以通过指针读取缓冲                        |
+| GL_MAP_WRITE_BIT                 | 缓冲区映射时，可以通过指针写入缓存                        |
+| GL_MAP_PERSISTENT_BIT            | 在绘制内容时保持缓冲区映射（持久映射）                     |
+| GL_MAP_COHERENT_BIT              | 缓冲区映射图是连贯的                                   |
+| GL_CLIENT_STORAGE_BIT            | 优先将缓冲区的存储空间分配到应用内存上，而不是在显存上分配    |
+
+OpenGL 在执行绘制命令（`glDraw...()`）时会结果缓冲区映射，设置 `GL_MAP_PERSISTENT_BIT` 则可以一直保持映射状态，会牺牲一定性能。
+
+GL_MAP_CORCORMENT_BIT 表示缓存区在 CPU 和 GPU 之间映射是密切相关的，保证了在 CPU 或 GPU 对缓冲区的写入效果最终会对另一方可见，而不需要应用程序进一步干预。如果不设置这个标志位，只有在结束缓冲区映射或者调用 `glFlushMappedBufferRange() / glMemoryBarrier()` 来应用更改。
 
 
 ### 更新 buffer 缓冲区的内容
 
-一组函数：
+`gl[Named]BufferSubData()` 用来将数据写入缓冲区（内存 -> 显存）
+需要将 `GL_DYNAMIC_STORAGE_BIT` 写入 `gl[Named]BufferStorage()` 的 flag 参数里：
 
 ```c
 void glBufferSubData(GLenum target,
@@ -169,46 +197,38 @@ void glNamedBufferSubData(GLuint buffer,
                           GLsizei size,
                           const void *data);
 ```
-
-毕竟要更新 buffer 的内容，因此在给 buffer 分配空间时，需要告诉 OpenGL 说 _这个 buffer 是可以直接更新的_ ，即在调用 `gl(Named)BufferStorage` 时，将 `GL_DYNAMIC_STORAGE_BIT` 传入 `flag` 传入函数参数。
-
-- `offset` 参数表示要写入的起始位置，以字节为单位
+- `offset` 表示要写入的起始位置，以字节为单位
 - `size` 表示要写入多大的数据，以字节为单位
 
-简单的例子，向 buffer 存入一组三角形的顶点数据：
+向缓冲区写入一组三角形的顶点数据：
 
 ```rust
 # use sb7::application::Application;
-# use std::ffi::c_void;
 # use std::mem::size_of_val;
 # use std::ptr::null;
 # struct App;
 # 
 # unsafe fn buf_test() {
-#  // 创建 buffer
+#   // 创建 buffer
   let mut buf = 0;
   gl::CreateBuffers(1, &mut buf);
   gl::BindBuffer(gl::ARRAY_BUFFER, buf);
 # 
 #   // 分配 1 KB 空间
 #   // 毕竟要更新 buffer 的内容，传入 DYNAMIC_STORAGE_BIT
-  gl::BufferStorage(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_STORAGE_BIT);
+#   gl::BufferStorage(gl::ARRAY_BUFFER, 1024, null(), gl::DYNAMIC_STORAGE_BIT);
 # 
 #   // 三角形的顶点数据
-#   #[rustfmt::skip]
   let data = [
      0.25, -0.25, 0.5, 1.0,
     -0.25, -0.25, 0.5, 1.0,
      0.25,  0.25, 0.5, 1.0
   ];
-# 
-#   // 将顶点数据传入 buffer
-  gl::BufferSubData(
-    gl::ARRAY_BUFFER,
-    0,
-    size_of_val(&data) as isize,
-    data.as_ptr() as *const c_void,
-  );
+
+  // 将顶点数据传入 buffer
+  gl::BufferSubData(gl::ARRAY_BUFFER, 0,
+                    size_of_val(&data) as _,
+                    data.as_ptr() as _);
 # }
 # 
 # impl Application for App {
@@ -223,10 +243,41 @@ void glNamedBufferSubData(GLuint buffer,
 #   App.run()
 # }
 ```
+也可以通过**缓冲区映射**，将存储在显卡的缓冲区映射到 OpenGL 应用程序的内存上，这样就可以通过指针直接写入缓冲区：
 
-### 内存映射
+```rust
+# use sb7::application::Application;
+# use std::ptr::null;
+# struct App;
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+      let mut buf = 0;
+      gl::CreateBuffers(1, &mut buf);
+      gl::NamedBufferStorage(buf, 1024 * 1024, null(), gl::MAP_READ_BIT);
+      
+      let data = [ 0.25, -0.25, 0.5, 1.0,
+                  -0.25, -0.25, 0.5, 1.0,
+                   0.25,  0.25, 0.5, 1.0, ];
 
-到此为止，还只是给 buffer 分配空间，以及更新 buffer。下面一组函数可以用来读取/更改 buffer 的内存:
+      let ptr = gl::MapNamedBuffer(buf, gl::WRITE_ONLY);
+# 
+#       // 缓冲区映射失败时返回 null
+#       assert_ne!(ptr as usize, 0, "buf map to null");
+
+      std::ptr::copy(data.as_ptr(), ptr as *mut f64, data.len());
+      gl::UnmapNamedBuffer(buf);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App.run();
+# }
+```
+对应的原型如下，`gl[Named]MapBuffer()` 用来将缓冲区映射到内存上，`gl[Named]UnmapBuffer()` 用来结束缓冲区映射：
+
 
 ```c
 void *glMapBuffer(GLenum target,
@@ -238,55 +289,57 @@ GLboolean glUnmapBuffer(GLenum target);
 GLboolean glUnmapNamedBuffer(GLuint buffer);
 ```
 
-将 buffer 的整个存储空间映射到客户端的内存空间上，这样就可以通过指针来读写 buffer 的内容了。`access` 有三种取值：`GL_READ_ONLY`，`GL_WRITE_ONLY`，`GL_READ_WRITE`。
+`access` 有三种取值：`GL_READ_ONLY`，`GL_WRITE_ONLY`，`GL_READ_WRITE`
+对应 `gl[Named]BufferStorage()` 的 flag 参数：`GL_MAP_READ_BIT`， `GL_MAP_WRITE_BIT`
 
-对应 glBufferStorage / glNamedBufferStorage 函数的 flag 参数：
-
-- `GL_MAP_READ_BIT`， `GL_MAP_WRITE_BIT`
-
-当不再需要读写 buffer 时，调用 glUnmapBuffer / glUnmapNamedBuffer 来结束内存映射
-
-读写：
+将 Hello World 写入缓冲区，然后再读取到内存：
 
 ```rust
 # use sb7::application::Application;
-# use std::ffi::c_void;
-# use std::mem::size_of_val;
+# use std::mem::size_of_val as sizeof;
 # use std::ptr::null;
 # struct App;
 # 
-# unsafe fn buf_test() {
-#   let mut buf = 0;
-#   gl::CreateBuffers(1, &mut buf);
-#   gl::NamedBufferStorage(
-#     buf,
-#     1024 * 1024,
-#     null(),
-#     gl::MAP_WRITE_BIT | gl::MAP_READ_BIT
-#   );
-#   
-#   #[rustfmt::skip]
-  let data = [ 0.25, -0.25, 0.5, 1.0,
-              -0.25, -0.25, 0.5, 1.0,
-              0.25,  0.25, 0.5, 1.0, ];
-  let ptr = gl::MapNamedBuffer(buf, gl::WRITE_ONLY);
-  copy(data.as_ptr(), ptr as *mut f64, data.len());
-  gl::UnmapNamedBuffer(buf);
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       gl::NamedBufferStorage(buf,
+#                              1024 * 1024,
+#                              null(),
+#                              gl::MAP_READ_BIT | gl::DYNAMIC_STORAGE_BIT);
+      {
+        let mut str = Vec::from("Hello World");
+        str.resize(100, 0);
+        gl::NamedBufferSubData(buf, 0, sizeof(&str[..]) as _,
+                               str.as_ptr() as _);
+      }
 
-  let mut recv = [0.0; 12];
-  let ptr = gl::MapNamedBuffer(buf, gl::READ_ONLY);
-  copy(ptr as *const f64, recv.as_mut_ptr(), recv.len());
-  gl::UnmapNamedBuffer(buf);
+      let str = {
+        let mut str = [0u8; 100];
+        let ptr = gl::MapNamedBuffer(buf, gl::READ_ONLY);
+        assert_ne!(ptr as usize, 0, "buf map to null");
 # 
-#   println!("{:?}", recv);
-#   // [0.25, -0.25, 0.5, 1.0, -0.25, -0.25,
-#   //  0.5, 1.0, 0.25, 0.25, 0.5, 1.0]
+        std::ptr::copy(ptr as _, str.as_mut_ptr(), 100);
+#         
+        gl::UnmapNamedBuffer(buf);
+        str
+      };
+
+      // [Hello World]
+      println!("[{}]",
+               std::str::from_utf8(&str).unwrap_or("err")
+                                        .trim_matches('\u{0}'));
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App.run();
 # }
 ```
-
-glMapBuffer 的开销和 buffer 的大小呈正比。毕竟映射的是整个buffer；
-
-更加轻量：
+`glMap[Named]Buffer()` 映射的是整个缓冲区，如果缓冲区越大，缓冲区映射的开销就越高。也可以通过下面的函数来映射特定范围的缓冲区：
 
 ```c
 void *glMapBufferRange(GLenum target,
@@ -299,55 +352,98 @@ void *glMapNamedBufferRange(GLuint buffer,
                             GLbitfield access);
 ```
 
-注意 access 的类型是 GLbitfield。
+`access` 是标志位，可以的取值：
 
-![a](./mappedrange.png)
+| 标志                          | 说明                                                 |
+|:-----------------------------|:----------------------------------------------------|
+| GL_MAP_READ_BIT              | 可以通过缓冲区映射读取                                  |
+| GL_MAP_WRITE_BIT             | 可以通过缓冲区映射写入                                  |
+| GL_MAP_PERSISTENT_BIT        | 持久映射                                             |
+| GL_MAP_COHERENT_BIT          | 缓冲映射图是连贯的                                     |
+| GL_MAP_INVALIDATE_RANGE_BIT  | 表示我们不再关心范围内数据，与 GL_MAP_READ_BIT 冲突       |
+| GL_MAP_INVALIDATE_BUFFER_BIT | 表示我们不再关心整个缓冲区内的数据，与 GL_MAP_READ_BIT 冲突 |
+| GL_MAP_FLUSH_EXPLICIT_BIT    | 表示我们会在映射范围内修改数据                           |
+| GL_MAP_UNSYNCHRONIZED_BIT    | 表示我们会自己会自己执行所有的同步                        |
+
+其中 `GL_MAP_READ_BIT`、`GL_MAP_WRITE_BIT`、`GL_MAP_PERSISTENT_BIT`、`GL_MAP_COHERENT_BIT` 必须和 `gl[Named]BufferStorage` 的 `flag` 相匹配，其作用相同。
+
+- `GL_MAP_INVALIDATE_RANGE_BIT`：在映射范围之前的数据可能会丢弃，而映射到 CPU 的那段缓冲区将会被擦除
+- `GL_MAP_INVALIDATE_BUFFER_BIT`：在将缓冲区映射到 CPU 时，缓冲区内所有数据将被擦除
+
+这里使用 0xFF 初始化缓冲区，再缓冲区内 15~45 字节 以 `GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_WRITE_BIT` 映射到 CPU：
 
 ```rust
-# use gl::types::GLintptr;
 # use sb7::application::Application;
-# use std::ffi::c_void;
-# use std::intrinsics::copy;
-# use std::mem::{size_of, size_of_val};
+# use std::mem::size_of_val as sizeof;
+# use std::ptr::null;
 # struct App;
 # 
-# #[rustfmt::skip]
-# unsafe fn buf_test() {
-  let mut buf = 0;
-  let data = [1, 2, 3, 4, 5, 6, 7];
-
-  gl::CreateBuffers(1, &mut buf);
-
-  let size = size_of_val(&data) as isize;
-  let data_ptr = data.as_ptr() as *const c_void;
-  gl::NamedBufferStorage(buf, size, data_ptr, gl::MAP_READ_BIT);
-
-  let mut recv = [0; 4];
-#   // 偏移量：2 * 4 字节（两个 i32 变量）
-  let offset = 2 * size_of::<i32>() as isize;
-#   // 映射长度：4 * 4 字节（四个 i32 变量）
-  let len = size_of_val(&recv) as isize;
-  let ptr = gl::MapNamedBufferRange(buf, offset, len, gl::MAP_READ_BIT);
-  copy(ptr as *const i32, recv.as_mut_ptr(), recv.len());
-  gl::UnmapNamedBuffer(buf);
+# fn print_buf(buf: [u8; 15 * 6]) {
+#   for j in 0..6 {
+#     for i in 0..15 {
+#       print!("{:-02X}, ", buf[j * 15 + i])
+#     }
+#     println!()
+#   }
 # }
 # 
 # impl Application for App {
 #   fn startup(&mut self) {
 #     unsafe {
-#       buf_test();
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       gl::NamedBufferStorage(buf,
+#                              15 * 6,
+#                              null(),
+#                              gl::MAP_READ_BIT | gl::MAP_WRITE_BIT |
+#                              gl::DYNAMIC_STORAGE_BIT);
+#       {
+        let data = [255u8; 15 * 6];
+        gl::NamedBufferSubData(buf, 0, sizeof(&data) as _,
+                               data.as_ptr() as _);
+#       }
+#       {
+        let ptr = gl::MapNamedBufferRange(buf, 15, 30,
+                                          gl::MAP_WRITE_BIT |
+                                          gl::MAP_INVALIDATE_BUFFER_BIT);
+        assert_ne!(ptr as usize, 0, "MapNamedBufferRange() failed");
+        gl::UnmapNamedBuffer(buf);
+#       }
+#       {
+        let ptr = gl::MapNamedBuffer(buf, gl::READ_ONLY);
+#         assert_ne!(ptr as usize, 0, "MapBuffer() failed");
+
+        let mut read = [0u8; 15 * 6];
+        std::ptr::copy(ptr as _, read.as_mut_ptr(), 120);
+# 
+        gl::UnmapNamedBuffer(buf);
+# 
+        print_buf(read);
+#       }
 #     }
 #   }
 # }
 # 
 # fn main() {
-#   App.run()
+#   App.run();
 # }
 ```
+`print_buf()` 输出如下：
+
+```
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+```
+
+在缓冲区映射的时候那段内存已经被清零了。如果给 `Map[Named]BufferRange()` 传入 `MAP_INVALIDATE_BUFFER_BIT`，那么整个缓冲区在映射时会被清零
 
 ### 填充数据、在 buffer 间复制数据
 
-填充：
+填充数据<sub>作者在整本书里就没有用过这个函数</sub>……：
 
 ```c
 void glClearBufferSubData(GLenum target,
@@ -367,6 +463,7 @@ void glClearNamedBufferSubData(GLuint buffer,
 ```
 
 - `size`, `offset`：填充区域，字节为单位
+- `type` `format` 说明指向 `data` 的数据的信息
 - `type`: 传入的数据类型，取值和对应的数据类型：
   | type              | 对应的 OpenGL 类型 |
   |:------------------|:-----------------|
@@ -378,11 +475,13 @@ void glClearNamedBufferSubData(GLuint buffer,
   | GL_UNSIGNED_INT   | GLuint           |
   | GL_FLOAT          | GLfloat          |
   | GL_DOUBLE         | GLdouble         |
-- `format`: 传入的数据格式：`GL_RED` `GL_RG` `GL_RGB` `GL_RGBA`：一维、二维、三维、四维
-- `internalformat`：buffer 内部存储的数据格式：[gl4/glClearBufferSubData](https://docs.gl/gl4/glClearBufferSubData)
+- `format`: 传入的数据格式
+  - `RED`、`GREEN`、`BLUE`、`RED_INTEGER`、`GREEN_INTEGER`、`BLUE_INTEGER`
+  - `RG`、`RG_INTEGER`
+  - `RGB`、`BGR`、`RGB_INTEGER`、`BGR_INTEGER`
+  - `RGBA`、`BGRA`、`RGBA_INTEGER`、`BGRA_INTEGER`
+- `internalformat`：buffer 内部存储的数据格式，参考 [gl4/glClearBufferSubData](https://docs.gl/gl4/glClearBufferSubData)
 
-
-简单示例<sub>作者在整本书里就没有用过这个函数</sub>……：
 
 ```rust
 # use gl::types::GLfloat;
@@ -421,7 +520,7 @@ void glClearNamedBufferSubData(GLuint buffer,
 # }
 ```
 
-buffer 间复制，类似于 C 里的 memcpy 函数（Rust 里对应的函数为std::intrinsics::copy）:
+在缓冲区之间复制，类似于 C 里的 `memcpy()` 或者 `strcpy()`（Rust 里对应`std::intrinsics::copy`）:
 
 ```c
 void glCopyBufferSubData(GLenum readTarget,
@@ -436,7 +535,7 @@ void glCopyNamedBufferSubData(GLuint readBuffer,
                               GLsizei size);
 ```
 
-上面第一个函数，也就是 glCopyBufferSubData 需要两个 buffer 绑定不同的绑定点。 openGL 也提供了 GL_COPY_READ_BUFFER 和 GL_COPY_WRITE_BUFFER 这两个绑定目标，这时候就可以用上了。
+`glCopyBufferSubData()` 需要两个不同的绑定点。 openGL 也提供了 GL_COPY_READ_BUFFER 和 GL_COPY_WRITE_BUFFER 这两个靶点，这时候就可以用上了。
 
 ```rust
 # use sb7::application::Application;
@@ -481,16 +580,9 @@ void glCopyNamedBufferSubData(GLuint readBuffer,
 # }
 ```
 
+## 将缓冲区作为顶点着色器的输入
 
-## 将 buffer 数据传递到顶点着色器
-
-
-
-新的 OpenGL 对象：顶点数组对象(vao)，用来存储顶点数组的状态。顶点数据存在另一个 buffer 对象里：顶点缓冲区对象(vbo)。
-
-buffer 存储顶点数据（顶点的位置、颜色、法向量……等属性），vao 则管理这些存储顶点数据的 buffer。vao 作为 shader 与 buffer 的桥梁。
-
-要从 buffer 读取顶点数据，就得创建一个 vao:
+顶点着色器的输入——顶点数组对象(vao)，用来存储顶点数组的状态，可以绑定多个缓冲区，将缓冲区的内容传入顶点着色器。创建 vao：
 
 ```rust
 # use gl::types::GLuint;
@@ -624,7 +716,7 @@ buffer 存储顶点数据（顶点的位置、颜色、法向量……等属性�
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, self.bufs.as_ptr());
 #       gl::DeleteProgram(self.program);
@@ -638,7 +730,7 @@ buffer 存储顶点数据（顶点的位置、颜色、法向量……等属性�
 # }
 ```
 
-建立顶点着色器内部顶点属性与 buffer 的关系，将下标为 bindingindex 的 buffer 内部数据作为顶点属性 attribindex 的输入：
+建立顶点着色器里顶点属性与缓冲区的关系，将 bindingindex 对应的缓冲区作为顶点属性 attribindex 的输入：
 
 ```c
 void glVertexArrayAttribBinding(GLuint vaobj,
@@ -646,10 +738,10 @@ void glVertexArrayAttribBinding(GLuint vaobj,
                                 GLuint bindingindex);
 ```
 
-- `attribindex` 顶点属性的下标（shader 里指定)
-- `bindingindex` vao绑定的顶点缓冲区对象下标，这个 buffer 存放一个顶点属性的数据
+- `attribindex` 顶点属性的位置，可以用 `glGetAttribLocation()` 查询，或者直接在顶点着色器里指定
+- `bindingindex` vao绑定的顶点缓冲区下标
 
-对应的 buffer 必须通过 glVertexArrayVertexBuffer 函数挂载到 vao 上：
+`glVertexArrayVertexBuffer()` 用来将缓冲区挂载到 vao 上： 
 
 ```c
 void glVertexArrayVertexBuffer(GLuint vaobj,
@@ -658,13 +750,12 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
                                GLintptr offset,
                                GLsizei stride);
 ```
+- `bindingindex`: 可以随便设，指定缓冲区在 vao 的位置，和 `glVertexArrayAttribBinding()` 对应
+- `buffer`: 要挂载到 vao 的缓冲区
+- `offset`: 偏移量（起始位置），字节为单位，着色器从哪里开始读入顶点数据
+- `stride`: 每个顶点数据的大小，字节为单位
 
-- vaobj: 与 buffer 绑定的 vao
-- buffer: 与 vao 相绑定的 buffer
-- offset: 偏移量（起始位置），字节为单位 shader 从什么地方开始读数据
-- stride: 每个顶点属性的大小
-
-使用方法：
+将两个缓冲区对象挂载到 vao 上，分别作为着色器内两个顶点属性的输入：
 
 ```rust
 # use gl::types::GLuint;
@@ -692,10 +783,10 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
 # 
 # 
 #     // 创建 vao
-#     let mut vao = 0;
+    let mut vao = 0;
 #     unsafe {
-#       gl::CreateVertexArrays(1, &mut vao);
-#       gl::BindVertexArray(vao);
+      gl::CreateVertexArrays(1, &mut vao);
+      gl::BindVertexArray(vao);
 #     }
 # 
 #     // 创建 buffer，初始化 buffer
@@ -704,15 +795,15 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
       gl::CreateBuffers(2, bufs.as_mut_ptr());
       gl::BindBuffer(gl::VERTEX_ARRAY, bufs[0]);
       gl::BindBuffer(gl::VERTEX_ARRAY, bufs[1]);
-#       gl::NamedBufferStorage(bufs[0], size_of_val(&position) as isize,
-#                              position.as_ptr() as *const c_void,
-#                              gl::DYNAMIC_STORAGE_BIT);
-#       gl::NamedBufferStorage(bufs[1], size_of_val(&color) as isize,
-#                              color.as_ptr() as *const c_void,
-#                              gl::DYNAMIC_STORAGE_BIT);
+      gl::NamedBufferStorage(bufs[0], size_of_val(&position) as isize,
+                             position.as_ptr() as *const c_void,
+                             gl::DYNAMIC_STORAGE_BIT);
+      gl::NamedBufferStorage(bufs[1], size_of_val(&color) as isize,
+                             color.as_ptr() as *const c_void,
+                             gl::DYNAMIC_STORAGE_BIT);
 # 
 #     }
-# 
+
 #     // 绑定 buffer 与 vao
 #     unsafe {
       gl::VertexArrayVertexBuffer(vao, 0, bufs[0], 0,
@@ -720,7 +811,7 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
       gl::VertexArrayVertexBuffer(vao, 1, bufs[1], 0,
                                   (size_of::<f32>() * 4) as i32);
 #     }
-# 
+
 #     // 设置顶点属性对应的 buffer
 #     unsafe {
       gl::VertexArrayAttribBinding(vao, 0, 0);
@@ -798,7 +889,7 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, self.bufs.as_ptr());
 #       gl::DeleteProgram(self.program);
@@ -812,7 +903,7 @@ void glVertexArrayVertexBuffer(GLuint vaobj,
 # }
 ```
 
-在通过 vao 搭建好 buffer 与顶点属性的桥梁之后，还需要给 OpenGL 说明顶点属性的格式，即说明一个顶点属性由几个元素组成，每个元素的数据类型是什么，以及其他配置：
+在通过 vao 搭建好缓冲区与顶点属性的桥梁之后，还需要给 OpenGL 说明顶点属性的格式（顶点属性由几个元素组成，每个元素的数据类型是什么）：
 
 ```c
 void glVertexArrayAttribFormat(GLuint vaobj,
@@ -823,25 +914,19 @@ void glVertexArrayAttribFormat(GLuint vaobj,
                                GLuint relativeoffset);
 ```
 
-- size: 这个顶点属性由几个数组成
-  - 颜色、位置：4 （rgba, xyzw）
-
-- type: 数据类型：GL::FLOAT, GL::UCHAT 等
-
-- normalized: 在传入着色器之前，是否对数据进行正规化处理
-  只对整数数据有效，浮点数不会进行正规化
+- `size`: 这个顶点属性由几个数组成：1、2、3、4
+- `type`: 数据类型：GL::FLOAT, GL::UCHAT 等
+- `normalized`: 在传入着色器之前，是否对数据进行正规化处理。浮点数不会进行正规化
   - 无符号整数转换成 \[0.0~1.0\] 的浮点数
   - 有符号整数转换成 \[-1.0~1.0\] 的浮点数
-
 - relativeoffset： 相对偏移量
+  - 第 n 个顶点在在缓冲区的读取位置与offset, relativeoffset 的关系：
+  
+  ```
+  location = offset + n * stride + relativeoffset
+  ```
 
-第 n 个顶点在 buffer 内部的读取位置和offset, relativeoffset 的关系：
-
-```
-location = offset + n * stride + relativeoffset
-```
-
-在设置完顶点属性的格式后，就可以调用 `glEnableVertexArrayAttrub()` 来启用之前的配置了：
+之后就可以调用 `glEnableVertexArrayAttrub()` 来启用之前的配置了：
 
 ```rust
 # use gl::types::GLuint;
@@ -909,7 +994,7 @@ location = offset + n * stride + relativeoffset
       gl::VertexArrayAttribFormat(vao, 0, 4, gl::FLOAT, gl::FALSE, 0);
       gl::VertexArrayAttribFormat(vao, 1, 4, gl::FLOAT, gl::FALSE, 0);
 #     }
-# 
+
 #     // 启用顶点属性
 #     unsafe {
       gl::EnableVertexArrayAttrib(vao, 0);
@@ -971,7 +1056,7 @@ location = offset + n * stride + relativeoffset
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, self.bufs.as_ptr());
 #       gl::DeleteProgram(self.program);
@@ -1097,7 +1182,7 @@ location = offset + n * stride + relativeoffset
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, self.bufs.as_ptr());
 #       gl::DeleteProgram(self.program);
@@ -1110,8 +1195,15 @@ location = offset + n * stride + relativeoffset
 #   App::default().run()
 # }
 ```
+结果大概长这样：
 
-也可以将顶点属性放到一个结构体里，然后存到一个 buffer 上：
+{% raw %}
+<div class="demo_app" id="_ch5_1_vao"></div>
+{% endraw %}
+
+
+
+也可以将顶点属性放到一个结构体里，然后存到同一个缓冲区上：
 
 ```rust
 # use gl::types::GLuint;
@@ -1137,8 +1229,8 @@ location = offset + n * stride + relativeoffset
 # 
     let vertices = [
       Vertex { x: -0.5, y: -0.5, z: 0.0, r: 1.0, g: 0.0, b: 0.0 },
-#       Vertex { x:  0.5, y: -0.5, z: 0.0, r: 0.0, g: 1.0, b: 0.0 },
-#       Vertex { x:  0.0, y:  0.5, z: 0.0, r: 0.0, g: 0.0, b: 1.0 },
+      Vertex { x:  0.5, y: -0.5, z: 0.0, r: 0.0, g: 1.0, b: 0.0 },
+      Vertex { x:  0.0, y:  0.5, z: 0.0, r: 0.0, g: 0.0, b: 1.0 },
     ];
 #   
 #     unsafe {
@@ -1211,7 +1303,7 @@ location = offset + n * stride + relativeoffset
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, &self.buf);
 #       gl::DeleteProgram(self.program);
