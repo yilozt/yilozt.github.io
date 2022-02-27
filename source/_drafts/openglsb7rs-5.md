@@ -148,7 +148,7 @@ void glNamedBufferStorage(GLuint buffer,
 +-----------------------------------------------------------------------------+
 ```
 
-显存占用从 2M 增加到了 200M，说明缓冲区对象的存储空间其实是分配内显存里的。
+显存占用从 2M 增加到了 102M，说明缓冲区对象的存储空间其实是分配内显存里的。
 
 如果要使用 `glBufferStorage()` 的话就需要将缓冲区绑定到靶点上：
 
@@ -1316,6 +1316,137 @@ void glVertexArrayAttribFormat(GLuint vaobj,
 #   App::default().run()
 # }
 ```
+对于将所有顶点数据存到同一个缓冲区的情况，也可以用 `glVertexAttribPointer()` 向顶点着色器传入数据：
+
+```c
+void glVertexAttribPointer(GLuint index,
+                           GLint size,
+                           GLenum type,
+                           GLboolean normalized,
+                           GLsizei stride,
+                           const GLvoid * pointer);
+```
+- `index`：顶点属性在着色器的位置（顶点属性）
+- `size`：顶点属性包含的数据个数：1、2、3、4、……
+- `type`：数据类型：`GL_FLOAT`、`GL_UNSIGNED_BYTE`……
+- `normalized`：是否进行正规化处理
+- `stride`：所有顶点属性的大小之和，字节为单位
+- `pointer`：顶点属性数据相对与 `stride` 的位置
+
+使用前提：
+1. 已经创建 vao 并绑定到 OpenGL 环境里
+2. 已经创建好缓冲区对象，填充数据后绑定到 `GL_ARRAY_BUFFER` 上
+
+用 `glVertexAttribPointer()` 重写上面的例子，整个配置过程非常简便：
+
+```rust
+# use gl::types::GLuint;
+# use sb7::application::Application;
+# use std::ffi::CString;
+# use std::mem::{size_of_val, size_of};
+# use std::ptr::null;
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: GLuint,
+#   buf: GLuint,
+#   program: GLuint
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+      let vertices_data = [
+        // position               // color
+        -0.5, -0.5, 0.0, 1.0,     1.0, 0.0, 0.0, 1.0, 
+         0.5, -0.5, 0.0, 1.0,     0.0, 1.0, 0.0, 1.0,
+         0.0,  0.5, 0.0, 1.0,     0.0, 0.0, 1.0, 1.0f32,
+      ];
+
+      let mut vao = 0;
+      gl::CreateVertexArrays(1, &mut vao);
+      gl::BindVertexArray(vao);
+
+      let mut buf = 0;
+      gl::CreateBuffers(1, &mut buf);
+      gl::NamedBufferStorage(buf, size_of_val(&vertices_data) as _,
+                             vertices_data.as_ptr() as _,
+                             gl::DYNAMIC_STORAGE_BIT);
+
+      gl::BindBuffer(gl::ARRAY_BUFFER, buf);
+      gl::VertexAttribPointer(0, 4, gl::FLOAT, gl::FALSE,
+                              (8 * size_of::<f32>()) as _, 0 as _);
+      gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE,
+                             (8 * size_of::<f32>()) as _,
+                             (4 * size_of::<f32>()) as _);
+      gl::EnableVertexArrayAttrib(vao, 0);
+      gl::EnableVertexArrayAttrib(vao, 1);
+# 
+#       let vs_source = CString::new("
+#         #version 460 core
+#         layout (location = 0) in vec4 position;
+#         layout (location = 1) in vec4 color;
+# 
+#         out vec4 vs_color;
+# 
+#         void main() {
+#           gl_Position = position;
+#           vs_color = color;
+#         }
+#       ").unwrap();
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_source.as_ptr(), null());
+#       gl::CompileShader(vs);
+#         
+#       let fs_source = CString::new("
+#         #version 460 core
+#         in vec4 vs_color;
+#         out vec4 fs_color;
+# 
+#         void main() {
+#           fs_color = vs_color;
+#         }
+#       ").unwrap();
+#       let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs, 1, &fs_source.as_ptr(), null());
+#       gl::CompileShader(fs);
+# 
+#       let program = gl::CreateProgram();
+#       gl::AttachShader(program, vs);
+#       gl::AttachShader(program, fs);
+#       gl::LinkProgram(program);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs);
+# 
+#       gl::UseProgram(program);
+# 
+#       *self = Self { vao, program, buf };
+# 
+#       gl::BindVertexArray(vao);
+#     }
+#   }
+# 
+#   fn render(&self, _current_time: f64) {
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR,0, [0.0, 0.0, 0.0f32].as_ptr());
+#       gl::DrawArrays(gl::TRIANGLES, 0, 3);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteBuffers(1, &self.buf);
+#       gl::DeleteProgram(self.program);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
 
 ### Uniform 变量
 
