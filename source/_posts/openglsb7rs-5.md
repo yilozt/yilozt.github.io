@@ -3536,84 +3536,113 @@ void memoryBarrier();
 
 一种特殊类型的变量，表示跨多个着色器调用共享的存储。
 
-- 这个存储由一个buffer对象支持，GLSL中提供了函数来递增和递减存储在缓冲区中的值。
-  - 这些操作的特殊之处在于它们是原子的：就像着色器存储块成员的等效函数（如表5.5所示）一样，它们返回计数器修改前的原始值。
-  - 就像其他原子操作一样，如果两个着色器调用同时递增同一个计数器，OpenGL会让它们轮流执行。不能保证这些操f作将发生的顺序，但能保证结果正确。
+- 原子计数器的值存储在缓冲区对象里，GLSL中提供了递增和递减原子计数器的函数。
+- 如果两个着色器调用同时递增同一个原子计数器，OpenGL会让它们轮流执行。不能保证这些操f作将发生的顺序，但能保证结果正确。
 
-在 shader 内声明原子计数器：
+在着色器内声明原子计数器：
 
 ```glsl
 layout (binding = 0) uniform atomic_uint my_variable
 ```
 
-binding 代表原子计数器和用来存储存储值的 buffer 之间的绑定点。
+binding 代表原子计数器和缓冲区对象之间的绑定点。
 
-每个原子计数器存储在缓冲区对象中的特定偏移量处。这个偏移量可以在 shader 里通过 offset 限定符指定：
+每个原子计数器存储在缓冲区对象中的特定偏移量处。这个偏移量可以通过 offset 限定符指定：
 
 ```glsl
 layout (binding = 3, offset = 8) uniform atomic_uint my_variable;
 ```
 
-存储原子计数器的 buffer 需要绑定到 `GL_ATOMIC_COUNTER_BUFFER` 上：
+存储原子计数器的缓冲区对象需要绑定到 `GL_ATOMIC_COUNTER_BUFFER` 上：
 
 ```rust
 # use gl::types::*;
 # use sb7::application::Application;
-# use std::{mem::size_of, ptr::null};
+# use std::mem::size_of;
+# use std::ptr::null;
 # 
-// 创建 buffer
-let mut buf = 0;
-gl::CreateBuffers(1, &mut buf);
+# #[derive(Default)]
+# struct App;
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+      let mut buf = 0;
+      gl::CreateBuffers(1, &mut buf);
 
-// 绑定到 GL_ATOMIC_COUNTER_BUFFER，分配空间
-gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
-gl::BufferData(gl::ATOMIC_COUNTER_BUFFER,
-                16 * size_of::<GLuint>() as isize,
-                null(), gl::DYNAMIC_COPY);
+      gl::NamedBufferData(buf,
+                          16 * size_of::<GLuint>() as isize,
+                          null(),
+                          gl::DYNAMIC_COPY);
 
-// 设置绑定下标，和 shader 内的原子计数器对应
-gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+      // 设置绑定下标，和 shader 内的原子计数器对应
+      gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App.run()
+# }
 ```
 
-初始化存储原子计数器的 buffer：
+初始化存储原子计数器的缓冲区对象：
 
 ```rust
 # use gl::types::*;
 # use sb7::application::Application;
-# use std::{mem::size_of, ptr::null};
-# let mut buf = 0;
-# gl::CreateBuffers(1, &mut buf);
-# gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
-# gl::NamedBufferData(buf,
-#                     16 * size_of::<GLuint>() as isize,
-#                     null(), gl::DYNAMIC_COPY);
-# gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+# use std::mem::size_of;
+# use std::ptr::null;
 # 
-let zero: GLuint = 0;
+# #[derive(Default)]
+# struct App;
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     unsafe {
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+# 
+#       gl::NamedBufferData(buf,
+#                           16 * size_of::<GLuint>() as isize,
+#                           null(),
+#                           gl::DYNAMIC_COPY);
+# 
+#       // 设置绑定下标，和 shader 内的原子计数器对应
+#       gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 3, buf);
+# 
+      let zero: GLuint = 0;
 
-// 方法1 - 使用 gl(Named)BufferSubData 命令
-gl::NamedBufferSubData(buf,
-                       2 * size_of::<GLuint>() as isize,
-                       size_of::<GLuint>() as isize,
-                       &zero as *const _ as _);
-
-// 方法2 - 使用 glMap(Named)BufferRange 命令将 buffer 映射到
-//        OpenGL 应用程序的内存空间上，然后直接写入
-let data: *mut GLuint =
-  gl::MapNamedBufferRange(buf,
-                          0, 16 * size_of::<GLuint>() as isize,
-                          gl::MAP_WRITE_BIT |
-                          gl::MAP_INVALIDATE_RANGE_BIT) as _;
-*data.add(2) = 0;
-
-// 方法3 - 使用 glClear(Named)BufferSubData 命令
-gl::ClearNamedBufferSubData(buf,
-                            gl::R32UI,
+      // 方法1 - 使用 gl(Named)BufferSubData 命令
+      gl::NamedBufferSubData(buf,
                             2 * size_of::<GLuint>() as isize,
-                            2 * size_of::<GLuint>() as isize,
-                            gl::RED_INTEGER,
-                            gl::UNSIGNED_INT,
-                            &zero as *const u32 as _);
+                            size_of::<GLuint>() as isize,
+                            &zero as *const _ as _);
+
+      // 方法2 - 使用 glMap(Named)BufferRange 命令将 buffer 映射到
+      //        OpenGL 应用程序的内存空间上，然后直接写入
+      let data: *mut GLuint =
+        gl::MapNamedBufferRange(buf,
+                                0, 16 * size_of::<GLuint>() as isize,
+                                gl::MAP_WRITE_BIT |
+                                gl::MAP_INVALIDATE_RANGE_BIT) as _;
+      *data.add(2) = 0;
+
+      // 方法3 - 使用 glClear(Named)BufferSubData 命令
+      gl::ClearNamedBufferSubData(buf,
+                                  gl::R32UI,
+                                  2 * size_of::<GLuint>() as isize,
+                                  2 * size_of::<GLuint>() as isize,
+                                  gl::RED_INTEGER,
+                                  gl::UNSIGNED_INT,
+                                  &zero as *const u32 as _);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App.run()
+# }
 ```
 
 在初始化 buffer，并将和原子计数器绑定后，就可以在 shader 内使用原子计数器计数了。
@@ -3624,7 +3653,7 @@ gl::ClearNamedBufferSubData(buf,
 uint atomicCounterIncrement(atomic_uint c);
 ```
 
-这个函数从原子计数器读取值，将其加一，返回原来读到的值。
+这个函数从原子计数器读取值，将其加一，__返回原来读到的值__。
 
 递减计数器：
 
@@ -3639,7 +3668,7 @@ uint atomicCounterDecrement(atomic_uint c);
 ```glsl
 uint atomicCounter(atomic_uint c);
 ```
-在片段着色器内使用原子计数器来计算渲染对象在屏幕空间上的面积：
+通过原子计数器来计算渲染对象在屏幕上的面积：
 
 ```glsl
 #version 450 core
@@ -3649,18 +3678,18 @@ void main(void) {
   atomicCounterIncrement(area);
 }
 ```
-shader 内没有输出（使用 out 修饰的变量），不会向帧缓冲写入任何数据。在运行这个 shader 时，可以关闭向帧缓冲的写入：
+这个片段着色器并没有输出（out 变量），不会向帧缓冲写入任何数据。在运行这个着色器时，可以关闭向帧缓冲的写入：
 
-```c
-glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+```rust
+gl::ColorMask(GL::FALSE, GL::FALSE, GL::FALSE, GL::FALSE);
 ```
-重新启用对缓冲区的写入：
+等到需要渲染的时候再重新启用对缓冲区的写入：
 
-```c
-glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+```rust
+gl::ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 ```
 
-原子计数器的值存储在 buffer 上，因此可以将原子计数器绑定到其他的 buffer 对象，比如 `GL_UNIFORM_BUFFER`，之后就可以通过 uniform 块来使用原子计数器的值了：
+在使用原子计数器后，存储原子计数器的缓冲区可以绑定到其他目标上，如 `GL_UNIFORM_BUFFER`，之后就可以通过 uniform 区块来使用原子计数器的值了：
 
 ```glsl
 #version 450 core
@@ -3679,12 +3708,9 @@ void main(void) {
   color = vec4(vec3(brightness), 1.0);
 }
 ```
-在 startup 函数里将存储原子计数器值的缓冲绑定到 GL_ATOMIC_COUNTER_BUFFER 与 GL_UNIFORM_BUFFER，这样子这块缓冲就可以同时用作原子计数器和一致区块了。
-
-在 render 函数里，先使用原子计数器进行计数，再读取一致区块内的原子计数器的值，来渲染物体：
+在 `startup()` 里可以同时将缓冲区对象绑定到 `GL_ATOMIC_COUNTER_BUFFER` 和 `GL_UNIFORM_BUFFER`，这样子这块缓冲就可以同时用作原子计数器和 uniform区块了：
 
 ```rust
-# use gl::*;
 # use sb7::{application::*, vmath::*};
 # use std::{
 #   ffi::CString,
@@ -3704,13 +3730,7 @@ void main(void) {
 # }
 # 
 # impl Application for App {
-#   fn init(&self) -> AppConfig {
-#     AppConfig { width: 704,
-#                 height: 315,
-#                 ..Default::default() }
-#   }
-# 
-  fn startup(&mut self) {
+#   fn startup(&mut self) {
 #     let vs_src = "
 #       #version 460 core
 #       
@@ -3756,31 +3776,31 @@ void main(void) {
 # 
 #     // 设置 shader
 #     unsafe {
-#       let vs = CreateShader(VERTEX_SHADER);
-#       ShaderSource(vs, 1, &vs_src.as_ptr(), null());
-#       CompileShader(vs);
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_src.as_ptr(), null());
+#       gl::CompileShader(vs);
 # 
-#       let fs_counter = CreateShader(FRAGMENT_SHADER);
-#       ShaderSource(fs_counter, 1, &fs_counter_src.as_ptr(), null());
-#       CompileShader(fs_counter);
+#       let fs_counter = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs_counter, 1, &fs_counter_src.as_ptr(), null());
+#       gl::CompileShader(fs_counter);
 # 
-#       let fs_render = CreateShader(FRAGMENT_SHADER);
-#       ShaderSource(fs_render, 1, &fs_render_src.as_ptr(), null());
-#       CompileShader(fs_render);
+#       let fs_render = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs_render, 1, &fs_render_src.as_ptr(), null());
+#       gl::CompileShader(fs_render);
 # 
-#       self.prog_counter = CreateProgram();
-#       AttachShader(self.prog_counter, vs);
-#       AttachShader(self.prog_counter, fs_counter);
-#       LinkProgram(self.prog_counter);
+#       self.prog_counter = gl::CreateProgram();
+#       gl::AttachShader(self.prog_counter, vs);
+#       gl::AttachShader(self.prog_counter, fs_counter);
+#       gl::LinkProgram(self.prog_counter);
 # 
-#       self.prog_render = CreateProgram();
-#       AttachShader(self.prog_render, vs);
-#       AttachShader(self.prog_render, fs_render);
-#       LinkProgram(self.prog_render);
+#       self.prog_render = gl::CreateProgram();
+#       gl::AttachShader(self.prog_render, vs);
+#       gl::AttachShader(self.prog_render, fs_render);
+#       gl::LinkProgram(self.prog_render);
 # 
-#       DeleteShader(vs);
-#       DeleteShader(fs_counter);
-#       DeleteShader(fs_render);
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs_counter);
+#       gl::DeleteShader(fs_render);
 #     }
 # 
 #     // 设置 vao
@@ -3837,19 +3857,19 @@ void main(void) {
 # 
 #     unsafe {
 #       let mut vao = 0;
-#       CreateVertexArrays(1, &mut vao);
+#       gl::CreateVertexArrays(1, &mut vao);
 # 
 #       let mut vbo = 0;
-#       CreateBuffers(1, &mut vbo);
-#       NamedBufferData(vbo,
+#       gl::CreateBuffers(1, &mut vbo);
+#       gl::NamedBufferData(vbo,
 #                       size_of_val(vertex_position) as _,
 #                       vertex_position.as_ptr() as _,
-#                       STATIC_DRAW);
+#                       gl::STATIC_DRAW);
 # 
-#       VertexArrayVertexBuffer(vao, 0, vbo, 0, 3 * size_of::<f32>() as i32);
-#       VertexArrayAttribFormat(vao, 0, 3, FLOAT, FALSE, 0);
-#       VertexArrayAttribBinding(vao, 0, 0);
-#       EnableVertexArrayAttrib(vao, 0);
+#       gl::VertexArrayVertexBuffer(vao, 0, vbo, 0, 3 * size_of::<f32>() as i32);
+#       gl::VertexArrayAttribFormat(vao, 0, 3, gl::FLOAT, gl::FALSE, 0);
+#       gl::VertexArrayAttribBinding(vao, 0, 0);
+#       gl::EnableVertexArrayAttrib(vao, 0);
 #       self.vao = vao;
 #       self.vbo = vbo;
 #     }
@@ -3857,28 +3877,28 @@ void main(void) {
 #     // 设置存储 原子计数器 的 buffer
 #     unsafe {
       let mut buf = 0;
-      CreateBuffers(1, &mut buf);
-      NamedBufferData(buf, size_of::<u32>() as _,
-                      &0u32 as *const u32 as _, DYNAMIC_COPY);
-# 
+      gl::CreateBuffers(1, &mut buf);
+      gl::NamedBufferData(buf, size_of::<u32>() as _,
+                      &0u32 as *const u32 as _, gl::DYNAMIC_COPY);
+
       self.atombuf = buf;
-# 
-      BindBuffer(UNIFORM_BUFFER, buf);
-      BindBufferBase(UNIFORM_BUFFER, 0, buf);
-      BindBuffer(ATOMIC_COUNTER_BUFFER, buf);
-      BindBufferBase(ATOMIC_COUNTER_BUFFER, 0, buf);
+
+      gl::BindBuffer(gl::UNIFORM_BUFFER, buf);
+      gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, buf);
+      gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
+      gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 0, buf);
 #     }
 # 
 #     // 初始化投影矩阵
-#     self.on_resize(704, 315);
+#     self.on_resize(800, 600);
 # 
 #     // 启用深度测试
 #     unsafe {
-#       Enable(DEPTH_TEST);
+#       gl::Enable(gl::DEPTH_TEST);
 #     }
-  }
-
-  fn render(&self, current_time: f64) {
+#   }
+# 
+#   fn render(&self, current_time: f64) {
 #     let Self { vao,
 #                proj_mat,
 #                prog_render,
@@ -3888,12 +3908,12 @@ void main(void) {
 #                .. } = self;
 # 
 #     unsafe {
-#       ClearBufferfv(COLOR, 0, [0.0, 0.0, 0.0f32].as_ptr());
-#       ClearBufferfv(DEPTH, 0, &1.0);
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0f32].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
 #     }
 # 
 #     unsafe {
-#       BindVertexArray(*vao);
+#       gl::BindVertexArray(*vao);
 #     }
 # 
 #     let current_time = current_time as f32;
@@ -3910,45 +3930,45 @@ void main(void) {
 #       let trans_mat = *proj_mat * trans_mat;
 # 
 #       unsafe {
-        ColorMask(FALSE, FALSE, FALSE, FALSE);
-        DepthMask(FALSE);
-
-        // 使用 prog_counter 计算面积
-        UseProgram(*prog_counter);
+#         gl::ColorMask(gl::FALSE, gl::FALSE, gl::FALSE, gl::FALSE);
+#         gl::DepthMask(gl::FALSE);
+# 
+#         // 使用 prog_counter 计算面积
+#         gl::UseProgram(*prog_counter);
 # 
 #         let cptr = CString::new("trans").unwrap();
-#         let location = GetUniformLocation(*prog_counter, cptr.as_ptr());
-#         UniformMatrix4fv(location, 1, FALSE, addr_of!(trans_mat) as _);
+#         let location = gl::GetUniformLocation(*prog_counter, cptr.as_ptr());
+#         gl::UniformMatrix4fv(location, 1, gl::FALSE, addr_of!(trans_mat) as _);
 # 
-        // 重置原子计数
-        NamedBufferData(*atombuf,
-                        size_of::<u32>() as _,
-                        &0u32 as *const _ as _,
-                        DYNAMIC_COPY);
+#         // 重置原子计数
+#         gl::NamedBufferData(*atombuf,
+#                         size_of::<u32>() as _,
+#                         &0u32 as *const _ as _,
+#                         gl::DYNAMIC_COPY);
 # 
-        DrawArrays(TRIANGLES, 0, 36);
-
-        // 等待所有 shader 执行完毕
-        MemoryBarrier(UNIFORM_BARRIER_BIT);
-
-        ColorMask(TRUE, TRUE, TRUE, TRUE);
-        DepthMask(TRUE);
-
-        // 使用 prog_render 渲染
-        UseProgram(*prog_render);
+#         gl::DrawArrays(gl::TRIANGLES, 0, 36);
+# 
+#         // 等待所有 shader 执行完毕
+#         gl::MemoryBarrier(gl::UNIFORM_BARRIER_BIT);
+# 
+#         gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
+#         gl::DepthMask(gl::TRUE);
+# 
+#         // 使用 prog_render 渲染
+#         gl::UseProgram(*prog_render);
 # 
 #         let cstr = CString::new("trans").unwrap();
-#         let location = GetUniformLocation(*prog_render, cstr.as_ptr());
-#         UniformMatrix4fv(location, 1, FALSE, addr_of!(trans_mat) as _);
+#         let location = gl::GetUniformLocation(*prog_render, cstr.as_ptr());
+#         gl::UniformMatrix4fv(location, 1, gl::FALSE, addr_of!(trans_mat) as _);
 # 
 #         let cstr = CString::new("max_area").unwrap();
-#         let location = GetUniformLocation(*prog_render, cstr.as_ptr());
-#         Uniform1f(location, *max_area);
+#         let location = gl::GetUniformLocation(*prog_render, cstr.as_ptr());
+#         gl::Uniform1f(location, *max_area);
 # 
-        DrawArrays(TRIANGLES, 0, 36);
+#         gl::DrawArrays(gl::TRIANGLES, 0, 36);
 #       }
 #     }
-  }
+#   }
 # 
 #   fn on_resize(&mut self, w: i32, h: i32) {
 #     let aspect = w as f32 / h as f32;
@@ -3956,13 +3976,297 @@ void main(void) {
 #     self.max_area = (w * h) as f32 * 0.03;
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
-#       DeleteProgram(self.prog_counter);
-#       DeleteProgram(self.prog_render);
-#       DeleteVertexArrays(1, &self.vao);
-#       DeleteBuffers(1, &self.vbo);
-#       DeleteBuffers(1, &self.atombuf);
+#       gl::DeleteProgram(self.prog_counter);
+#       gl::DeleteProgram(self.prog_render);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteBuffers(1, &self.atombuf);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+在 render 函数里，先使用原子计数器进行计数，再读取一致区块内的原子计数器的值，来渲染物体：
+
+```rust
+# use sb7::{application::*, vmath::*};
+# use std::{
+#   ffi::CString,
+#   mem::{size_of, size_of_val},
+#   ptr::{addr_of, null},
+# };
+# 
+# #[derive(Default)]
+# struct App {
+#   prog_counter: u32,
+#   prog_render: u32,
+#   vao: u32,
+#   vbo: u32,
+#   atombuf: u32,
+#   proj_mat: Mat4,
+#   max_area: f32,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs_src = "
+#       #version 460 core
+#       
+#       in vec3 position;
+#       uniform mat4 trans;
+# 
+#       void main(void) {
+#         gl_Position = trans * vec4(position, 1.0);
+#       }";
+# 
+#     let vs_src = CString::new(vs_src).unwrap();
+# 
+#     let fs_counter_src = "
+#       #version 460 core
+# 
+#       layout (binding = 0, offset = 0) uniform atomic_uint area;
+#       out vec4 color;
+#       
+#       void main(void) {
+#         atomicCounterIncrement(area);
+#         color = vec4(1.0);
+#       }";
+# 
+#     let fs_counter_src = CString::new(fs_counter_src).unwrap();
+# 
+#     let fs_render_src = "
+#       #version 460 core
+#       
+#       layout (binding = 0) uniform area_block {
+#       uint counter_value;
+#       };
+#       
+#       out vec4 color;
+#       
+#       uniform float max_area;
+#       
+#       void main(void) {
+#         float brightness = clamp(float(counter_value) / max_area,
+#                                   0.0, 1.0);
+#         color = vec4(vec3(brightness), 1.0);
+#       }";
+#     let fs_render_src = CString::new(fs_render_src).unwrap();
+# 
+#     // 设置 shader
+#     unsafe {
+#       let vs = gl::CreateShader(gl::VERTEX_SHADER);
+#       gl::ShaderSource(vs, 1, &vs_src.as_ptr(), null());
+#       gl::CompileShader(vs);
+# 
+#       let fs_counter = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs_counter, 1, &fs_counter_src.as_ptr(), null());
+#       gl::CompileShader(fs_counter);
+# 
+#       let fs_render = gl::CreateShader(gl::FRAGMENT_SHADER);
+#       gl::ShaderSource(fs_render, 1, &fs_render_src.as_ptr(), null());
+#       gl::CompileShader(fs_render);
+# 
+#       self.prog_counter = gl::CreateProgram();
+#       gl::AttachShader(self.prog_counter, vs);
+#       gl::AttachShader(self.prog_counter, fs_counter);
+#       gl::LinkProgram(self.prog_counter);
+# 
+#       self.prog_render = gl::CreateProgram();
+#       gl::AttachShader(self.prog_render, vs);
+#       gl::AttachShader(self.prog_render, fs_render);
+#       gl::LinkProgram(self.prog_render);
+# 
+#       gl::DeleteShader(vs);
+#       gl::DeleteShader(fs_counter);
+#       gl::DeleteShader(fs_render);
+#     }
+# 
+#     // 设置 vao
+#     #[rustfmt::skip]
+#     let vertex_position : &[f32]= &[
+#       -0.25,  0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+#        0.25,  0.25, -0.25,
+# 
+#        0.25, -0.25,  0.25,
+#       -0.25, -0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#        0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25, -0.25,
+#       -0.25,  0.25, -0.25,
+#       -0.25,  0.25,  0.25,
+# 
+#       -0.25, -0.25,  0.25,
+#        0.25, -0.25,  0.25,
+#        0.25, -0.25, -0.25,
+# 
+#        0.25, -0.25, -0.25,
+#       -0.25, -0.25, -0.25,
+#       -0.25, -0.25,  0.25,
+# 
+#       -0.25,  0.25, -0.25,
+#        0.25,  0.25, -0.25,
+#        0.25,  0.25,  0.25,
+# 
+#        0.25,  0.25,  0.25,
+#       -0.25,  0.25,  0.25,
+#       -0.25,  0.25, -0.25
+#     ];
+# 
+#     unsafe {
+#       let mut vao = 0;
+#       gl::CreateVertexArrays(1, &mut vao);
+# 
+#       let mut vbo = 0;
+#       gl::CreateBuffers(1, &mut vbo);
+#       gl::NamedBufferData(vbo,
+#                       size_of_val(vertex_position) as _,
+#                       vertex_position.as_ptr() as _,
+#                       gl::STATIC_DRAW);
+# 
+#       gl::VertexArrayVertexBuffer(vao, 0, vbo, 0, 3 * size_of::<f32>() as i32);
+#       gl::VertexArrayAttribFormat(vao, 0, 3, gl::FLOAT, gl::FALSE, 0);
+#       gl::VertexArrayAttribBinding(vao, 0, 0);
+#       gl::EnableVertexArrayAttrib(vao, 0);
+#       self.vao = vao;
+#       self.vbo = vbo;
+#     }
+# 
+#     // 设置存储 原子计数器 的 buffer
+#     unsafe {
+#       let mut buf = 0;
+#       gl::CreateBuffers(1, &mut buf);
+#       gl::NamedBufferData(buf, size_of::<u32>() as _,
+#                       &0u32 as *const u32 as _, gl::DYNAMIC_COPY);
+# 
+#       self.atombuf = buf;
+# 
+#       gl::BindBuffer(gl::UNIFORM_BUFFER, buf);
+#       gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, buf);
+#       gl::BindBuffer(gl::ATOMIC_COUNTER_BUFFER, buf);
+#       gl::BindBufferBase(gl::ATOMIC_COUNTER_BUFFER, 0, buf);
+#     }
+# 
+#     // 初始化投影矩阵
+#     self.on_resize(800, 600);
+# 
+#     // 启用深度测试
+#     unsafe {
+#       gl::Enable(gl::DEPTH_TEST);
+#     }
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let Self { vao,
+#                proj_mat,
+#                prog_render,
+#                prog_counter,
+#                atombuf,
+#                max_area,
+#                .. } = self;
+# 
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0f32].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, &1.0);
+#     }
+# 
+#     unsafe {
+#       gl::BindVertexArray(*vao);
+#     }
+# 
+#     let current_time = current_time as f32;
+# 
+#     for i in 0..24 {
+#       let f = i as f32 + current_time * 0.3;
+# 
+#       let trans_mat = translate(0.0, 0.0, -6.0)
+#                       * rotate_with_axis(current_time * 45.0, 0.0, 1.0, 0.0)
+#                       * rotate_with_axis(current_time * 21.0, 1.0, 0.0, 0.0)
+#                       * translate((2.1 * f).sin() * 2.0,
+#                                   (1.7 * f).cos() * 2.0,
+#                                   (1.3 * f).sin() * (1.5 * f).cos() * 2.0);
+#       let trans_mat = *proj_mat * trans_mat;
+# 
+#       unsafe {
+        gl::ColorMask(gl::FALSE, gl::FALSE, gl::FALSE, gl::FALSE);
+        gl::DepthMask(gl::FALSE);
+
+        // 使用 prog_counter 计算面积
+        gl::UseProgram(*prog_counter);
+# 
+#         let cptr = CString::new("trans").unwrap();
+#         let location = gl::GetUniformLocation(*prog_counter, cptr.as_ptr());
+#         gl::UniformMatrix4fv(location, 1, gl::FALSE, addr_of!(trans_mat) as _);
+# 
+        // 重置原子计数
+        gl::NamedBufferData(*atombuf,
+                        size_of::<u32>() as _,
+                        &0u32 as *const _ as _,
+                        gl::DYNAMIC_COPY);
+# 
+        gl::DrawArrays(gl::TRIANGLES, 0, 36);
+
+        // 等待所有 shader 执行完毕
+        gl::MemoryBarrier(gl::UNIFORM_BARRIER_BIT);
+
+        gl::ColorMask(gl::TRUE, gl::TRUE, gl::TRUE, gl::TRUE);
+        gl::DepthMask(gl::TRUE);
+
+        // 使用 prog_render 渲染
+        gl::UseProgram(*prog_render);
+# 
+#         let cstr = CString::new("trans").unwrap();
+#         let location = gl::GetUniformLocation(*prog_render, cstr.as_ptr());
+#         gl::UniformMatrix4fv(location, 1, gl::FALSE, addr_of!(trans_mat) as _);
+# 
+#         let cstr = CString::new("max_area").unwrap();
+#         let location = gl::GetUniformLocation(*prog_render, cstr.as_ptr());
+#         gl::Uniform1f(location, *max_area);
+# 
+        gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#       }
+#     }
+#   }
+# 
+#   fn on_resize(&mut self, w: i32, h: i32) {
+#     let aspect = w as f32 / h as f32;
+#     self.proj_mat = sb7::vmath::perspective(45.0, aspect, 0.1, 1000.0);
+#     self.max_area = (w * h) as f32 * 0.03;
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.prog_counter);
+#       gl::DeleteProgram(self.prog_render);
+#       gl::DeleteVertexArrays(1, &self.vao);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteBuffers(1, &self.atombuf);
 #     }
 #   }
 # }
