@@ -5,6 +5,7 @@ categories: 学习笔记
 date: 2022-01-23 13:35:55
 ---
 
+
 这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。
 - 随书源码：https://github.com/openglsuperbible/sb7code
 - demo： https://github.com/yilozt/sb7coders
@@ -3297,7 +3298,9 @@ void glUniformBlockBinding(GLuint program,
 
 缓冲区对象和 uniform 区块之间的关系：
 
-[]
+![uniform block and buffers match](./uniform_blk_buffers.png)
+
+上图对应的处理代码如下：
 
 ```rust
 let [harry_index, bob_index, susan_index] = ["Harry", "Bob", "Susan"]
@@ -3314,7 +3317,7 @@ gl::UniformBlockBinding(program, susan_index, 0);
 gl::BindBufferBase(gl::UNIFORM_BUFFER, buf_b, 0);
 ```
 
-uniform 块的绑定下标还可以在 shader 里指定：
+uniform  区块的绑定的缓冲区对象下标也可以在着色器里指定：
 
 ```glsl
 layout (binding = 1) uniform Harry {
@@ -3334,15 +3337,103 @@ uniform (binding = 0) Susan {
 
 这样子就可以删除 `UniformBlockBinding()` 函数了：
 
-```
-  gl::BindBufferBase(gl::UNIFORM_BUFFER, 1, buf_c);
-
-  gl::BindBufferBase(gl::UNIFORM_BUFFER, 3, buf_a);
-
-  gl::BindBufferBase(gl::UNIFORM_BUFFER, buf_b, 0);
+```rust
+gl::BindBufferBase(gl::UNIFORM_BUFFER, 1, buf_c);
+gl::BindBufferBase(gl::UNIFORM_BUFFER, 3, buf_a);
+gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, buf_b);
 ```
 
-// todo 验证 std140 布局
+回到之前使用标准布局的 uniform 区块，根据规范可以推断出各个成员的位置：
+
+```glsl
+layout(std140) uniform TransformBlock {
+  float scale;            // offset: 0
+  vec3 translation;       // offset: 16
+  float rotate[3];        // offset: 32, stride: 16
+  mat4 projection_matrix; // offset: 80, stride: 16
+} transforms;
+```
+现在可以用 `glGetActiveUniformsiv()` 来验证了：
+
+```rust
+# use std::ffi::CString;
+# use sb7::application::Application;
+# 
+# #[derive(Default)]
+# struct App;
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "
+#     #version 460 core
+# 
+#     layout(std140) uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } trans;
+# 
+#     void main() {
+#       gl_Position = trans.scale * vec4(1.0);
+#     }
+#     ";
+# 
+#     let fs = "
+#     #version 460 core
+#     out vec4 color;
+#     void main() { color = vec4(1.0); }
+#     ";
+# 
+#     let prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs, gl::FRAGMENT_SHADER, true),
+#     ], true);
+# 
+#     unsafe {
+      let names = [
+        CString::new("TransformBlock.scale"),
+        CString::new("TransformBlock.translation"),
+        CString::new("TransformBlock.rotate"),
+        CString::new("TransformBlock.projection_matrix"),
+      ];
+      let names = names.iter()
+       .map(|s| s.as_ref().unwrap().as_ptr())
+       .collect::<Box<[*const i8]>>();
+      
+      let mut indices = [0i32; 4];
+      gl::GetUniformIndices(prog, 4, names.as_ptr(),
+                            indices.as_mut_ptr() as _);
+      assert_ne!(indices, [-1, -1, -1, -1], "glGetUniformIndices() failed");
+
+      let mut offsets = [0; 4];
+      let mut arr_strides = [0; 4];
+      let mut mat_strides = [0; 4];
+
+      gl::GetActiveUniformsiv(prog, 4, indices.as_ptr() as _,
+                              gl::UNIFORM_OFFSET,
+                              offsets.as_mut_ptr());
+      gl::GetActiveUniformsiv(prog, 4, indices.as_ptr() as _,
+                              gl::UNIFORM_ARRAY_STRIDE,
+                              arr_strides.as_mut_ptr());
+      gl::GetActiveUniformsiv(prog, 4, indices.as_ptr() as _,
+                              gl::UNIFORM_MATRIX_STRIDE,
+                              mat_strides.as_mut_ptr());
+    
+      assert_eq!(offsets[0], 0);  // scale
+      assert_eq!(offsets[1], 16); // translation
+      assert_eq!(offsets[2], 32); // rotate
+      assert_eq!(arr_strides[2], 16);
+      assert_eq!(offsets[3], 80); // projection_matrix
+      assert_eq!(mat_strides[3], 16);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App.run()
+# }
+```
 
 ## Shader 存储块
 
