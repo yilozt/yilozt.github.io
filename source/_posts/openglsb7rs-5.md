@@ -2498,7 +2498,9 @@ uniform TransformBlock {
 == 0:6(29): error: offset can only be used with std430 and std140 layouts
 ```
 
-需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，此时在 OpenGL 程序里无法预知数据的位置，只能向 OpenGL 查询数据到底存在哪。查询过程：
+__查询 uniform 区块成员的存储位置__
+
+在 shared 布局下需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，此时在 OpenGL 程序里无法预知数据的位置，只能向 OpenGL 查询数据到底存在哪。查询过程：
 
 查询某一成员在 uniform 区块里的位置：
 
@@ -2851,6 +2853,8 @@ for col in 0..4 {
   }
 }
 ```
+
+__绑定 uniform 区块和缓冲区对象__
 
 创建缓冲对象，将上面准备好的内存写入缓冲：
 
@@ -3269,7 +3273,8 @@ GLuint glGetUniformBlockIndex(GLuint program,
       gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, uniform_buf);
       
       let name = CString::new("TransformBlock").unwrap();
-      let uniform_blk_index = gl::GetUniformBlockIndex(program, name.as_ptr());
+      let uniform_blk_index = gl::GetUniformBlockIndex(program,
+                                                       name.as_ptr());
 #       gl::UniformBlockBinding(program, uniform_blk_index, 0);
     }
 #   }
@@ -3435,20 +3440,20 @@ layout(std140) uniform TransformBlock {
 # }
 ```
 
-## Shader 存储块
+## 着色器存储区块
 
-buffer 除了用来向 shader 传递以外，还可以通过 shader 存储块来存储来自 shader 的数据。
+和 uniform 区块类似，着色器存储区块也需要绑定一块缓冲区对象以存储数据。除了用来向着色器传递数据以外，着色器也可以向着色器存储区块写入数据。
 
-和 uniform 块的相似之处：
-- 声明：和 uniform 块类似，只是将 uniform 关键字替换成 buffer
-- 绑定buffer：也是用 `BindBufferBase` 函数，只是将 `GL_UNIFORM_BUFFER` 换成 `GL_SHADER_STORAGE_BUFFER`
-- 可以指定内存布局：std140 std430
+- 和 uniform 区块的相似之处：
+  - 声明：和 uniform 区块类似，只是将 uniform 关键字替换成 buffer
+  - 绑定缓冲区：也是用 `glBindBufferBase()`，只是将 `GL_UNIFORM_BUFFER` 换成 `GL_SHADER_STORAGE_BUFFER`
+  - 可以指定内存布局：std140 std430
+  - OpenGL 应用程序都可以通过缓冲区映射读取区块内的数据。
+- 不同之处：
+  - **着色器可以向着色器存储区块写入数据**
+  - 支持原子操作(读取-编辑-写入 --> 一个操作)
 
-不同之处：
-- shader 可以写入 uniform 块的内容
-- shader 存储块内部的成员是原子操作(读取-编辑-写入 --> 一个操作)
-- 在 OpenGL 程序里可以用 glBufferData 来向 shader 存储块写入数据
-  也可以通过 glMapBufferRange 读取 uniform 存储块的数据
+__声明__
 
 ```glsl
 #version 460 core
@@ -3473,8 +3478,9 @@ void main(void) {
   vs_out.color = vertices[gl_VertexID].color;
 }
 ```
+### 原子操作
 
-在 shader 存储块内，只有 int 和 uint 变量才能进行原子操作。需要调用以下函数：
+只有 32 位整型（int 和 uint）才支持原子操作，可以避免数据竞争：
 
 |Syntax                                   |Description                  |
 |:----------------------------------------|:----------------------------|
@@ -3489,35 +3495,42 @@ void main(void) {
 
 ### 同步访问内存
 
-在任何情况下，对内存的读操作都是安全的。但是，当 shader 开始将数据写入 buffer 时，无论是写入 shader 存储块里的变量，还是显式调用可能会写入内存的原子操作函数，在某些情况下需要避免内存风险。
+当着色器开始将数据写入缓冲区时（向着色器存储区块里的成员赋值，或者通过原子操作函数写入着色器存储区块），可能会引发内存风险
 
 内存风险大概分为三类：
 
-- 先读后写(RAW)风险：当程序企图在写入一块内存后读取时，根据系统的体系结构，读和写可能被重新排序，使得读在写之前完成，导致旧数据返回应用程序
-- 先写后写（WRW)风险：当程序连续两次写入同一块内存时，在某些体系结构下，无法保证第二个数据会覆盖第一个数据，导致最终进入内存的是第一个数据
-- 先写后读风险（WAR）风险：只在并行处理系统里（如GPU）出现，当一个执行线程在另一个线程 __认为__ 自己读取后写入内存时，就可能发生。如果这些操作被重新排序，执行读操作的线程会读取到第二个线程写入的数据，而这是无法预料的。
+- 先读后写(RAW)风险：当程序在写入一块内存后尝试读取时，根据系统架构，读写操作可能被重新排序，使得读在写之前完成，导致旧数据返回应用程序
+- 先写后写（WRW)风险：当程序连续两次写入同一块内存时，在某些架构下，无法保证第二个数据会覆盖第一个数据，导致最终进入内存的是第一个数据
+- 先写后读风险（WAR）风险：只在并行处理系统里（如GPU）出现，当一个执行线程在另一线程认为自己已经读取内存后尝试将数据写入内存时会发生此风险。如果这些操作被重新排序，执行读操作的线程会读取到第二个线程写入的数据。
 
-由于OpenGL所期望运行的系统具有深度流水线和高度并行的特性，它包含了许多机制来减轻和控制内存风险。如果没有这些特性，OpenGL实现将需要更加保守地重新排序着色器并并行运行它们。处理内存风险的主要工具是*内存屏障（memory barrier）*。
+运行 OpenGL 的系统具有较强的管线和并行特点，包含了大量缓解和控制内存风险的机制。如果没有这些功能，OpenGL实现需要更加保守地重排和并行运行这些着色器。处理内存风险的主要工具为*内存屏障（memory barrier）*。
 
-内存屏障本质上是一个标记，它告诉OpenGL，“嘿，如果你要开始重新排序，那很好--只是不要让我在这一点之后说的任何话发生在我在这一点之前说的任何话之前。”你可以在应用程序代码中（通过调用OpenGL）和着色器中插入屏障。
+内存屏障基本上是一个助记符，指示 OpenGL “如果准备重新排序，需要先完成之前发送的命令，不要执行之后的命令” ，可以在 OpenGL 应用程序和着色器里插入屏障。
 
-其实本质上是一个标记点，只有在这个点之前的事件都完成后，OpenGL才可以执行这个点之后的事件。
+### 在 OpenGL 应用程序内使用屏障
 
-#### 在 OpenGL 应用程序内使用屏障
+在 OpenGL 应用程序的代码里插入 `glMemoryBarrier()`：
 
 ```c
 void glMemoryBarrier(GLbitfield barriers);
 ```
 
-// TODO: barriers 参数 
+`barriers` 用来说明哪些内存会受内存屏障的影响，哪些可以忽略内存屏障继续运行：
 
-#### 在 shader 内使用屏障
+- `GL_ALL_BARRIER_BITS`：对所有的内存子系统进行同步
+- `GL_SHADER_STORAGE_BARRIER_BIT`：只有在屏障之前的着色器完成数据的访问之后，才允许屏障之后的着色器运行
+- `GL_UNIFORM_BARRIER_BIT`：只有在写入缓冲的着色器结束后，才允许屏障后以该缓冲作为 uniform 区块的着色器运行
+- ` GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT`：等待向缓冲写入数据的着色器完成后，才允许将该缓存作为顶点属性输入的着色器运行
+
+### 在着色器内使用屏障
+
+在着色器里插入 `memoryBarrier()`：
 
 ```glsl
 void memoryBarrier();
 ```
 
-更为具体的函数：`memoryBarrierBuffer()`
+也可以使用更为具体的函数：`memoryBarrierBuffer()`
 
 ## 原子计数器
 
