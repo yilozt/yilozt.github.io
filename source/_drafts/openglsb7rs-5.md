@@ -5,7 +5,7 @@ categories: 学习笔记
 date: 2022-01-23 13:35:55
 ---
 
-这是自己阅读 OpenGL 超级宝典（第七版）的笔记。
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。
 - 随书源码：https://github.com/openglsuperbible/sb7code
 - demo： https://github.com/yilozt/sb7coders
 
@@ -182,7 +182,7 @@ OpenGL 在执行绘制命令（`glDraw...()`）时会结果缓冲区映射，设
 GL_MAP_CORCORMENT_BIT 表示缓存区在 CPU 和 GPU 之间映射是密切相关的，保证了在 CPU 或 GPU 对缓冲区的写入效果最终会对另一方可见，而不需要应用程序进一步干预。如果不设置这个标志位，只有在结束缓冲区映射或者调用 `glFlushMappedBufferRange() / glMemoryBarrier()` 来应用更改。
 
 
-### 更新 buffer 缓冲区的内容
+### 更新缓冲区的内容
 
 `gl[Named]BufferSubData()` 用来将数据写入缓冲区（内存 -> 显存）
 需要将 `GL_DYNAMIC_STORAGE_BIT` 写入 `gl[Named]BufferStorage()` 的 flag 参数里：
@@ -441,7 +441,7 @@ FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
 
 在缓冲区映射的时候那段内存已经被清零了。如果给 `Map[Named]BufferRange()` 传入 `MAP_INVALIDATE_BUFFER_BIT`，那么整个缓冲区在映射时会被清零
 
-### 填充数据、在 buffer 间复制数据
+### 填充数据、缓冲区间复制数据
 
 填充数据<sub>作者在整本书里就没有用过这个函数</sub>……：
 
@@ -580,7 +580,7 @@ void glCopyNamedBufferSubData(GLuint readBuffer,
 # }
 ```
 
-## 将缓冲区作为顶点着色器的输入
+### 将缓冲区作为顶点着色器的输入
 
 顶点着色器的输入——顶点数组对象(vao)，用来存储顶点数组的状态，可以绑定多个缓冲区，将缓冲区的内容传入顶点着色器。创建 vao：
 
@@ -1446,13 +1446,11 @@ void glVertexAttribPointer(GLuint index,
 #   App::default().run()
 # }
 ```
+## Uniform 变量
 
+uniform 变量可以在任何着色器里声明，是一种很重要的数据形式，可以理解为着色器暴露给 OpenGL 应用程序的全局变量。可以在 OpenGL 应用程序里将数据直接传递给着色器。最常见的 uniform 变量应该就是变换矩阵了。
 
-### Uniform 变量
-
-- 可以在应用程序内将数据直接传递给 shader
-
-在 shader 里声明 uniform 变量：
+声明 uniform 变量：
 
 ```glsl
 uniform float time;
@@ -1460,10 +1458,7 @@ uniform int index;
 uniform vec4 color;
 uniform mat4 vpmat;
 ```
-
-uniform 变量需要在 C++ / Rust 代码里传入数据，glsl 内不能对 uniform 变量赋值。
-
-但是可以在声明的时候可以赋初值：
+在着色器里不能对 uniform 变量赋值，只能在声明的时候赋初值：
 
 ```glsl
 uniform float a = 12;
@@ -1471,11 +1466,12 @@ uniform float a = 12;
 
 ### 向 uniform 变量传递数据
 
-调用 `glGetUniformLocation()`  查询 uniform 变量的位置，之后就可调用一系列 `glUniform*` 函数来给 uniform 变量传递数据：
+先用 `glGetUniformLocation()` 查询 uniform 变量在哪，再用 `glUniform*()` 给 uniform 变量传递数据（类似于赋值）：
 
-`glUniform*` 函数的原型，完整：[glUniform](/gl4/glUniform)
- 
 ```c
+GLint glGetUniformLocation(GLuint program,
+                           const GLchar *name);
+
 void glUniform1f(GLint location,
                  GLfloat v0);
 void glUniform2f(GLint location,
@@ -1483,22 +1479,15 @@ void glUniform2f(GLint location,
                  GLfloat v1);
 ...
 ```
+可以在 docs.gl 查看所有的 `glUniform*()` 函数：https://docs.gl/gl4/glUniform
 
-这里的 location 参数需要调用 `glGetUniformLocation` 来查询：
-
-```c
-GLint glGetUniformLocation(GLuint program,
-                           const GLchar *name);
-```
-
-glsl定义 uniform 变量：
+对于这两个 uniform 变量：
 
 ```glsl
 uniform float time;
 uniform vec3 offset;
 ```
-
-在 Rust 里给这两个 uniform 变量赋值：
+在 OpenGL 应用程序里给它们赋值：
 
 ```rust
 let name = CString::new("time").unwrap();
@@ -1510,7 +1499,7 @@ let loffset = gl::GetUniformLocation(program, name.as_ptr());
 gl::Uniform3f(loffset, 1.0, 2.0, 3.0);
 ```
 
-也可以在 glsl 里指定 uniform 变量的 location:
+也可以在着色器里直接指定 uniform 变量的位置:
 
 ```glsl
 layout (location = 0) uniform float time;
@@ -1519,7 +1508,7 @@ layout (location = 2) uniform vec4 color;
 layout (location = 3) uniform bool flag;
 ```
 
-传递数据：
+这样就不需要调用 `GetUniformLocation()` 了：
 
 ```rust
 gl::Uniform1f(0, 1.0);
@@ -1539,7 +1528,7 @@ void glUniform4fv(GLint location,
                   const GLfloat *value);
 ```
 
-给 vec4 变量传递数据：
+用 `Uniform4fv()` 传 vec4 变量：
 
 ```glsl glsl:
 uniform vec4 vcolor;
@@ -1550,7 +1539,7 @@ let vcolor = [1.0, 1.0, 1.0, 1.0];
 gl::Uniform4fv(vcolor_location, 1, vcolor.as_ptr());
 ```
 
-给 vec4数组传递数据：
+传递数组，将 `glUniform4fv()` 的 count 设置为数组长度就行：
 
 ```glsl glsl, 顶点着色器:
 # #version 460 core
@@ -1696,10 +1685,9 @@ uniform mat4 mv_mat = mat4(1.0);
 # }
 ```
 
-```rust rust:
+```rust
 # use gl::types::GLuint;
 # use sb7::application::Application;
-# use sb7::vmath::rotate;
 # use std::ffi::{c_void, CString};
 # use std::mem::{size_of_val, size_of};
 # use std::ptr::{null, addr_of};
@@ -1791,10 +1779,10 @@ uniform mat4 mv_mat = mat4(1.0);
 # 
 #   fn render(&self, _current_time: f64) {
 #     unsafe {
-      let mv_mat = rotate(0.0, _current_time as f32 * 45.0, 0.0);
-#       let name = CString::new("mv_mat").unwrap();
-#       let location_mv_mat = gl::GetUniformLocation(self.program,
-#                                                    name.as_ptr() as _);
+      let mv_mat = sb7::vmath::rotate(0.0, _current_time as f32 * 45.0, 0.0);
+      let name = CString::new("mv_mat").unwrap();
+      let location_mv_mat = gl::GetUniformLocation(self.program,
+                                                   name.as_ptr() as _);
       gl::UniformMatrix4fv(location_mv_mat, 1,
                            gl::FALSE, addr_of!(mv_mat) as _);
 # 
@@ -1803,7 +1791,7 @@ uniform mat4 mv_mat = mat4(1.0);
 #     }
 #   }
 # 
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteBuffers(2, &self.buf);
 #       gl::DeleteProgram(self.program);
@@ -1816,13 +1804,25 @@ uniform mat4 mv_mat = mat4(1.0);
 #   App::default().run()
 # }
 ```
+
 对应的效果如下：
 
 {% raw %}
 <div class="demo_app" id="_ch5_1_0_uniform_mat"></div>
 {% endraw %}
 
-#### 通过 uniform 变量设置变换矩阵
+`glUniformMatrix4fv()` 原型如下：
+
+```c
+void glUniformMatrix4fv(GLint location,
+                        GLsizei count,
+                        GLboolean transpose,
+                        const GLfloat *value);
+```
+- `count`：矩阵个数，传 mat4 数组的时候传元素个数
+- `transpose`：传递时是否将矩阵转置，如果线性代数库里的矩阵是以行优先存储的，需要设置为 GL_TRUE，来对矩阵进行转置，以符合 OpenGL 的期望格式
+
+__通过 uniform 变量设置变换矩阵__
 
 初始化顶点数据：
 
@@ -2045,7 +2045,7 @@ uniform mat4 mv_mat = mat4(1.0);
 # ...
 ```
 
-将变换矩阵和投影矩阵传递到shader里：
+将变换矩阵和投影矩阵写入 uniform 变量：
 
 ```rust
 # impl Application for App {
@@ -2311,22 +2311,19 @@ void main() {
 # fn main() {
 #   App::default().run()
 # }
-
 ```
 
 {% raw %}
 <div class="demo_app" id="_ch5_3_spinningcubes"></div>
 {% endraw %}
 
-#### Uniform 块
+### Uniform 区块
 
-过多的 uniform 变量意味着将会有很多散落在各处的`glUniform*()` 函数（难以维护）。将 uniform 变量塞到一个块结构(uniform 块)里，而要传入的数据存储在 buffer 对象中。
+如果程序成千上万的 uniform 变量意味着将会有很多散落在各处的`glUniform*()`（难以维护）。将 uniform 变量塞到一个块结构(uniform 区块)里，uniform 区块的数据和缓冲区对象绑定，从而降低调用 `glUniform*()`的开销。
 
-用来存储 uniform 块数据的 buffer 对象被成为 UBO (uniform 缓冲区对象)
+和 uniform 区块相绑定的缓冲区称为 ubo
 
-##### 声明
-
-格式大概是这样：
+__声明__
 
 ```glsl
 uniform [块名] {
@@ -2344,7 +2341,7 @@ uniform TransformBlock
 
 ```
 
-访问成员：`transform.scale`， ... 和结构体类似
+和结构体类似，访问成员：`transform.scale`
 
 如果要定义多个 `TransformBlock` 块实例的话，这样子是不行的：
 
@@ -2370,30 +2367,30 @@ uniform TransformBlock {
 } transforms[2];
 ```
 
-这样子就可以给 transforms[0] 和 transforms[1] 分配不同的 buffer 。
+这样子就可以给 transforms[0] 和 transforms[1] 分配绑定不同的缓冲区对象了。
 
-访问属性：
+访问：
 
 ```glsl
 gl_Position =  transforms[0].projection_matrix * vec4(0.0);
 ```
-
-##### UBO的内存格式
-
-用来存储 uniform 块内数据的 buffer：UBO。数据在 buffer 内部的布局方式，可以自行取舍：
+__UBO的内存格式__
 
 - 标准布局：
   - 数据类型的大小 N 字节，则数据的存储位置为 N 字节的整数倍：
-    - int float bool：在 glsl 占用 4 字节，在 buffer 存储地址为 4 的整数倍
+    - int float bool：在 glsl 占用 4 字节，在缓冲区的存储地址为 4 的整数倍
   - 数据类型的大小 N 字节，则二维向量 与 2 * N 字节对齐
     - vec2 的存储位置与 2 * 4 = 8 字节对齐
   - 数据类型的大小 N 字节，三维、四维向量与 4 * N 字节对齐
     - vec3, vec4 的存储位置与 16字节对齐
   - 数组：每个元素和 4 * N 字节对齐
+  - 完整规则参考：[OpenGL 4.6规范](https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf) `7.6.2.2 Standard Uniform Block Layout`
+  - 好处：可以预知 uniform 区块内的数据位置，因为这些在标准里已经定义好了，所有 OpenGL 实现都遵循这这个标准
+  - 坏处：数据对进行对齐，稍微浪费空间
+- shared 布局：
+  让 OpenGL 根据 uniform 区块的成员，自行决定其存储位置，会比标准布局高效，但是无法预知数据的存储位置，只能向 openGL 查询成员的位置后才能向 uniform 区块写入数据
 
-参考：[OpenGL 4.6规范](https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf) `7.6.2.2 Standard Uniform Block Layout`
-
-使用标准布局：在 uniform 关键字前加上 `layout(std140)`进行修饰
+使用标准布局：在 uniform 关键字前加上 `layout(std140)`
 
 ```glsl
 layout(std140) uniform TransformBlock {
@@ -2414,7 +2411,7 @@ layout(std140) uniform TransformBlock {
   - rotate[2]：起始位置为 64 字节
 - mat4：可以看成 vec4 数组，每个元素与 16 字节对齐
 
-可以设置 uniform 块内部成员的偏移量：
+也可以直接指定 uniform 块内部成员的起始位置：
 
 ```glsl
 layout(std140) uniform ManuallyLaidOutBlock {
@@ -2467,12 +2464,10 @@ layout(std140, align = 16) uniform ManuallyLaidOutBlock {
 } myBlock;
 ```
 
-- 共享布局
-
-OpenGL 使用的默认布局，定义的时候不要加任何修饰符：
+shared 布局 OpenGL 使用的默认布局，定义的时候不用加任何修饰符：
 
 ```glsl
-layout uniform TransformBlock {
+uniform TransformBlock {
   float scale;
   vec3 translation;
   float rotate[3];
@@ -2480,7 +2475,7 @@ layout uniform TransformBlock {
 } transforms;
 ```
 
-在这个布局下，OpenGL会自己为 uniform 块的成员分配内存位置，这时候就不能自行指定成员内存位置了：
+在这个布局下，OpenGL会自己为 uniform 块的成员分配内存位置，这时候就不能自行指定成员起始位置：
 
 ```glsl
 # #version 460 core
@@ -2502,18 +2497,33 @@ uniform TransformBlock {
 == 0:6(29): error: offset can only be used with std430 and std140 layouts
 ```
 
-需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，此时程序员是无法预知数据的位置，只能向 OpenGL 查询数据到底存在哪。
+需要自己向 OpenGL 查询数据的位置和大小，因为OpenGL会按照自己的方式对数据的存放方式进行优化，此时在 OpenGL 程序里无法预知数据的位置，只能向 OpenGL 查询数据到底存在哪。查询过程：
 
-查询某一成员在 uniform 块里的位置
+查询某一成员在 uniform 区块里的位置：
 
 ```c
-- 查询成员下标 glGetUniformIndices
+void glGetUniformIndices(GLuint program,
+                         GLsizei uniformCount,
+                         const GLchar **uniformNames,
+                         GLuint *uniformIndices);
+```
+- `program`：uniform 区块所在的着色器程序
+- `count`：要查询的成员个数，一般传 `uniformNames` 数组的元素个数
+- `uniformNames`：要查询的成员，字符串数组
+- `uniformIndices`：保存返回的成员位置
+
+```glsl
+uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} transforms;
 ```
 
 ```rust
 # use gl::types::*;
 # use sb7::application::Application;
-# use sb7::utils::*;
 # 
 # #[derive(Default)]
 # struct App {
@@ -2540,14 +2550,18 @@ uniform TransformBlock {
 #       color = vec4(1.0);
 #     }";
 # 
-#     let program = program(&[shader(gl::VERTEX_SHADER, vs),
-#                             shader(gl::FRAGMENT_SHADER, fs)]);
-#     // 查询 uniform 成员的下标
-    use std::ffi::CString;
+#     let program = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs,gl::FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     use std::ffi::CString;
     let uniform_names = [CString::new("TransformBlock.rotate"),
                          CString::new("TransformBlock.scale"),
                          CString::new("TransformBlock.translation"),
                          CString::new("TransformBlock.projection_matrix")];
+    
+    // 指向字符串的指针数组
     let uniform_names = uniform_names.iter()
                                      .map(|s| s.as_ref().unwrap().as_ptr())
                                      .collect::<Box<[_]>>();
@@ -2557,10 +2571,10 @@ uniform TransformBlock {
                             uniform_names.as_ptr(),
                             uniform_indices.as_mut_ptr());
     }
-    // [2, 0, 1, 3]
-    println!("{:?}", uniform_indices);
+#     // [2, 0, 1, 3]
+#     println!("{:?}", uniform_indices);
 #   }
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteProgram(self.program);
 #     }
@@ -2572,11 +2586,29 @@ uniform TransformBlock {
 # }
 ```
 
-知道 uniform 块成员的下标之后，就可以用这个下标查询成员的内存位置，占用大小等信息：
+通过返回的 `uniformIndices` 数组和 `glGetActiveUniformsiv()` 查询成员在缓冲区的位置、占用大小等信息：
 
 ```c
-- 查询对应的信息（成员内存起始位置，成员大小）glGetActiveUniformsiv
+void glGetActiveUniformsiv(GLuint program,
+                           GLsizei uniformCount,
+                           const GLuint *uniformIndices,
+                           GLenum pname,
+                           GLint *params);
 ```
+- `uniformIndices`、`uniformCount`：之前 `glGetUniformIndices()` 返回的数组
+- `pname`：要查询的信息：
+  | pname 的取值     | 说明 |
+  |:----------------|:----|
+  | GL_UNIFORM_TYPE | 成员数据类型    |
+  | GL_UNIFORM_SIZE | 成员是数组的话返回数组元素个数，不是数组返回 1 |
+  | GL_UNIFORM_NAME_LENGTH | 成员名称字符串长度 |
+  | GL_UNIFORM_BLOCK_INDEX | 成员所属区块的索引 |
+  | GL_UNIFORM_OFFSET      | __成员在区块内的存储位置__ |
+  | GL_UNIFORM_ARRAY_STRIDE | 如果成员是数组，**返回数组每个元素的大小**，如果不是数组返回 0 |
+  | GL_UNIFORM_MATRIX_STRIDE | 如果成员是矩阵，**返回矩阵每列（每行）的大小**，如果不是矩阵返回 0 |
+  | GL_UNIFORM_IS_ROW_MAJOR | 如果成员是行优先矩阵返回 1，否则返回 0 |
+  
+- `params`：查询返回结果
 
 ```rust
 # use gl::types::*;
@@ -2612,10 +2644,10 @@ uniform TransformBlock {
 #                             shader(gl::FRAGMENT_SHADER, fs)]);
 #     // 查询 uniform 成员的下标
 #     use std::ffi::CString;
-#     let uniform_names = [CString::new("TransformBlock.rotate"),
-#                          CString::new("TransformBlock.scale"),
-#                          CString::new("TransformBlock.translation"),
-#                          CString::new("TransformBlock.projection_matrix")];
+    let uniform_names = [CString::new("TransformBlock.rotate"),
+                         CString::new("TransformBlock.scale"),
+                         CString::new("TransformBlock.translation"),
+                         CString::new("TransformBlock.projection_matrix")];
 #     let uniform_names = uniform_names.map(|s| s.unwrap().into_raw());
 #     let mut uniform_indices = [0u32; 4];
 #     unsafe {
@@ -2640,7 +2672,7 @@ uniform TransformBlock {
                               mat_strides.as_mut_ptr())
     }
 #   }
-#   fn shutdown(&self) {
+#   fn shutdown(&mut self) {
 #     unsafe {
 #       gl::DeleteProgram(self.program);
 #     }
@@ -2652,52 +2684,127 @@ uniform TransformBlock {
 # }
 ```
 
-可以查看这些数组的数据：
+这样就得到各个成员在缓冲区的位置和占用大小了：
 
 ```rust
-println!("uniform_indices: {:?}", uniform_indices);
-println!("     arr_stride: {:?}", arr_strides);
-println!("     mat_stride: {:?}", mat_strides);
+# use gl::types::*;
+# use sb7::application::Application;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+    let vs = "#version 460 core
+    uniform TransformBlock {
+      float scale;
+      vec3 translation;
+      float rotate[3];
+      mat4 projection_matrix;
+    } transforms;
 
+    void main() {
+      gl_Position =  transforms.projection_matrix * vec4(0.0);
+    }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs,gl::FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     use std::ffi::CString;
+    let uniform_names = [CString::new("TransformBlock.rotate"),
+                         CString::new("TransformBlock.scale"),
+                         CString::new("TransformBlock.translation"),
+                         CString::new("TransformBlock.projection_matrix")];
+#     
+#     // 指向字符串的指针数组
+#     let uniform_names = uniform_names.iter()
+#                                      .map(|s| s.as_ref().unwrap().as_ptr())
+#                                      .collect::<Box<[_]>>();
+#     let mut uniform_indices = [0u32; 4];
+#     unsafe {
+#       gl::GetUniformIndices(program, 4,
+#                             uniform_names.as_ptr(),
+#                             uniform_indices.as_mut_ptr());
+#     }
+#     // [2, 0, 1, 3]
+#     println!("{:?}", uniform_indices);
+# 
+#     let mut offsets     = [0i32; 4];
+#     let mut arr_strides = [0i32; 4];
+#     let mut mat_strides = [0i32; 4];
+# 
+#     unsafe {
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_OFFSET,
+#                               offsets.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_ARRAY_STRIDE,
+#                               arr_strides.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_MATRIX_STRIDE,
+#                               mat_strides.as_mut_ptr());
+#     }
+# 
+    println!("rotate: offset = {}, stride = {}",
+              offsets[0], arr_strides[0]);
+    println!("scale: offset = {}", offsets[1]);
+    println!("translation: offset = {}", offsets[2]);
+    println!("projection_matrix: offset = {}, stride = {}",
+              offsets[3], mat_strides[3]);
+
+#   }
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
 ```
 ```txt 输出：
-uniform_indices: [2, 0, 1, 3]    
-     arr_stride: [4, 0, 0, 0]
-     mat_stride: [0, 0, 0, 16]
-```
-进而得到各个成员的位置，以及每个元素的大小：
-
-```rust
-println!("rotate: offset = {}, stride = {}",
-          uniform_offsets[0], arr_strides[0]);
-println!("scale: offset = {}", uniform_offsets[1]);
-println!("translation: offset = {}", uniform_offsets[2]);
-println!("projection_matrix: offset = {}, stride = {}",
-          uniform_offsets[3], mat_strides[3]);
-```
-```txt 输出：
-scale: offset = 0
 rotate: offset = 28, stride = 4
-translation: offset = 16, stride = 0
+scale: offset = 0
+translation: offset = 16
 projection_matrix: offset = 48, stride = 16
 ```
 
-在查询到 uniform 块的内存布局之后，分配内存，写入数据：
+```glsl
+uniform TransformBlock {
+  float scale;
+  vec3 translation;
+  float rotate[3];
+  mat4 projection_matrix;
+} transforms;
+```
 
+```rust
+let uniform_names = [CString::new("TransformBlock.rotate"),
+                     CString::new("TransformBlock.scale"),
+                     CString::new("TransformBlock.translation"),
+                     CString::new("TransformBlock.projection_matrix")];
 ```
-TransformBlock.rotate: float[3]
-TransformBlock.scale: float
-TransformBlock.translation: vec3
-TransformBlock.projection_matrix: mat4
-```
-最简单的情况，写入 float 变量：
+
+在查询 uniform 区块的内存布局之后，分配内存，写入数据。最简单的情况，写入 float 变量：
 
 ```rust
 let data = Box::new([0u8; 4096]);
 let ptr =  data.as_ptr();
 
 unsafe {
-  let offset = uniform_offsets[1] as usize;
+  let offset = offsets[1] as usize;
   *(ptr.add(offset) as *mut f32) = 3.0f32;
 }
 ```
@@ -2706,7 +2813,7 @@ unsafe {
 
 ```rust
 unsafe {
-  let offset = uniform_offsets[2] as usize;
+  let offset = offsets[2] as usize;
   *(ptr.add(offset) as *mut f32).add(0) = 1.0f32;
   *(ptr.add(offset) as *mut f32).add(1) = 2.0f32;
   *(ptr.add(offset) as *mut f32).add(2) = 3.0f32;
@@ -2718,7 +2825,7 @@ unsafe {
 ```rust
 let rotates: [f32; 3] = [30.0, 40.0, 50.0];
 unsafe {
-  let mut offset = uniform_offsets[0] as usize;
+  let mut offset = offsets[0] as usize;
   for i in 0..3 {
     *(ptr.add(offset) as *mut f32) = rotates[i];
     offset += arr_strides[0] as usize;
@@ -2734,33 +2841,463 @@ let mat : [f32; 16]=  [ 1.0, 2.0, 3.0, 4.0,
                         9.0, 8.0, 7.0, 6.0,
                         2.0, 4.0, 6.0, 8.0,
                         1.0, 3.0, 5.0, 7.0 ];
-for i in 0..4 {
-  let mut offset = uniform_offsets[3] as usize
-                 + mat_strides[3] as usize * i;
-  for j in 0..4 {
-    unsafe { *(ptr.add(offset) as *mut f32) = mat[i * 4 + j] };
+for col in 0..4 {
+  let mut offset = offsets[3] as usize
+                 + mat_strides[3] as usize * col;
+  for row in 0..4 {
+    unsafe { *(ptr.add(offset) as *mut f32) = mat[col * 4 + row] };
     offset += std::mem::size_of::<f32>();
   }
 }
 ```
 
-向 OpenGL 查询 uniform 块的位置：
+创建缓冲对象，将上面准备好的内存写入缓冲：
 
-```c
-- glGetUniformIndex???
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "#version 460 core
+#     uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } transforms;
+# 
+#     void main() {
+#       gl_Position =  transforms.projection_matrix * vec4(0.0);
+#     }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs,gl::FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     use std::ffi::CString;
+#     let uniform_names = [CString::new("TransformBlock.rotate"),
+#                          CString::new("TransformBlock.scale"),
+#                          CString::new("TransformBlock.translation"),
+#                          CString::new("TransformBlock.projection_matrix")];
+#     
+#     // 指向字符串的指针数组
+#     let uniform_names = uniform_names.iter()
+#                                      .map(|s| s.as_ref().unwrap().as_ptr())
+#                                      .collect::<Box<[_]>>();
+#     let mut uniform_indices = [0u32; 4];
+#     unsafe {
+#       gl::GetUniformIndices(program, 4,
+#                             uniform_names.as_ptr(),
+#                             uniform_indices.as_mut_ptr());
+#     }
+#     // [2, 0, 1, 3]
+#     println!("{:?}", uniform_indices);
+# 
+#     let mut offsets     = [0i32; 4];
+#     let mut arr_strides = [0i32; 4];
+#     let mut mat_strides = [0i32; 4];
+# 
+#     unsafe {
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_OFFSET,
+#                               offsets.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_ARRAY_STRIDE,
+#                               arr_strides.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_MATRIX_STRIDE,
+#                               mat_strides.as_mut_ptr());
+#     }
+# 
+#     println!("rotate: offset = {}, stride = {}",
+#               offsets[0], arr_strides[0]);
+#     println!("scale: offset = {}", offsets[1]);
+#     println!("translation: offset = {}", offsets[2]);
+#     println!("projection_matrix: offset = {}, stride = {}",
+#               offsets[3], mat_strides[3]);
+# 
+#     let data = Box::new([0u8; 4096]);
+#     let ptr =  data.as_ptr();
+#     
+#     unsafe {
+#       let offset = offsets[1] as usize;
+#       *(ptr.add(offset) as *mut f32) = 3.0f32;
+#     }
+# 
+#     unsafe {
+#       let offset = offsets[2] as usize;
+#       *(ptr.add(offset) as *mut f32).add(0) = 1.0f32;
+#       *(ptr.add(offset) as *mut f32).add(1) = 2.0f32;
+#       *(ptr.add(offset) as *mut f32).add(2) = 3.0f32;
+#     }
+# 
+#     let rotates: [f32; 3] = [30.0, 40.0, 50.0];
+#     unsafe {
+#       let mut offset = offsets[0] as usize;
+#       for i in 0..3 {
+#         *(ptr.add(offset) as *mut f32) = rotates[i];
+#         offset += arr_strides[0] as usize;
+#       }
+#     }
+# 
+#     let mat : [f32; 16]=  [ 1.0, 2.0, 3.0, 4.0,
+#                             9.0, 8.0, 7.0, 6.0,
+#                             2.0, 4.0, 6.0, 8.0,
+#                             1.0, 3.0, 5.0, 7.0 ];
+#     for col in 0..4 {
+#       let mut offset = offsets[3] as usize
+#                     + mat_strides[3] as usize * col;
+#       for row in 0..4 {
+#         unsafe { *(ptr.add(offset) as *mut f32) = mat[col * 4 + row] };
+#         offset += std::mem::size_of::<f32>();
+#       }
+#     }
+# 
+    let mut uniform_buf = 0;
+    unsafe {
+      gl::CreateBuffers(1, &mut uniform_buf);
+      gl::NamedBufferStorage(uniform_buf, data.len() as _,
+                             data.as_ptr() as _, gl::DYNAMIC_STORAGE_BIT);
+# 
+#       gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, uniform_buf);
+#       
+#       let name = CString::new("TransformBlock").unwrap();
+#       let uniform_blk_index = gl::GetUniformBlockIndex(program, name.as_ptr());
+#       gl::UniformBlockBinding(program, uniform_blk_index, 0);
+    }
+#   }
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
 ```
 
-给 uniform 块指定一个绑定下标
+用 `glBindBufferBase()` 将缓冲区绑定到 `GL_UNIFORM_BUFFER`：
 
 ```c
-- glUniformBlockBinding
+void glBindBufferBase(GLenum target,
+                      GLuint index,
+                      GLuint buffer);
 ```
 
-将 buffer 绑定到刚才设置的绑定下标：
+- `index`：自己给缓冲区指定的绑定下标，后面调 `glUniformBlockBinding()` 的时候要用
+
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "#version 460 core
+#     uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } transforms;
+# 
+#     void main() {
+#       gl_Position =  transforms.projection_matrix * vec4(0.0);
+#     }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs,gl::FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     use std::ffi::CString;
+#     let uniform_names = [CString::new("TransformBlock.rotate"),
+#                          CString::new("TransformBlock.scale"),
+#                          CString::new("TransformBlock.translation"),
+#                          CString::new("TransformBlock.projection_matrix")];
+#     
+#     // 指向字符串的指针数组
+#     let uniform_names = uniform_names.iter()
+#                                      .map(|s| s.as_ref().unwrap().as_ptr())
+#                                      .collect::<Box<[_]>>();
+#     let mut uniform_indices = [0u32; 4];
+#     unsafe {
+#       gl::GetUniformIndices(program, 4,
+#                             uniform_names.as_ptr(),
+#                             uniform_indices.as_mut_ptr());
+#     }
+#     // [2, 0, 1, 3]
+#     println!("{:?}", uniform_indices);
+# 
+#     let mut offsets     = [0i32; 4];
+#     let mut arr_strides = [0i32; 4];
+#     let mut mat_strides = [0i32; 4];
+# 
+#     unsafe {
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_OFFSET,
+#                               offsets.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_ARRAY_STRIDE,
+#                               arr_strides.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_MATRIX_STRIDE,
+#                               mat_strides.as_mut_ptr());
+#     }
+# 
+#     println!("rotate: offset = {}, stride = {}",
+#               offsets[0], arr_strides[0]);
+#     println!("scale: offset = {}", offsets[1]);
+#     println!("translation: offset = {}", offsets[2]);
+#     println!("projection_matrix: offset = {}, stride = {}",
+#               offsets[3], mat_strides[3]);
+# 
+#     let data = Box::new([0u8; 4096]);
+#     let ptr =  data.as_ptr();
+#     
+#     unsafe {
+#       let offset = offsets[1] as usize;
+#       *(ptr.add(offset) as *mut f32) = 3.0f32;
+#     }
+# 
+#     unsafe {
+#       let offset = offsets[2] as usize;
+#       *(ptr.add(offset) as *mut f32).add(0) = 1.0f32;
+#       *(ptr.add(offset) as *mut f32).add(1) = 2.0f32;
+#       *(ptr.add(offset) as *mut f32).add(2) = 3.0f32;
+#     }
+# 
+#     let rotates: [f32; 3] = [30.0, 40.0, 50.0];
+#     unsafe {
+#       let mut offset = offsets[0] as usize;
+#       for i in 0..3 {
+#         *(ptr.add(offset) as *mut f32) = rotates[i];
+#         offset += arr_strides[0] as usize;
+#       }
+#     }
+# 
+#     let mat : [f32; 16]=  [ 1.0, 2.0, 3.0, 4.0,
+#                             9.0, 8.0, 7.0, 6.0,
+#                             2.0, 4.0, 6.0, 8.0,
+#                             1.0, 3.0, 5.0, 7.0 ];
+#     for col in 0..4 {
+#       let mut offset = offsets[3] as usize
+#                     + mat_strides[3] as usize * col;
+#       for row in 0..4 {
+#         unsafe { *(ptr.add(offset) as *mut f32) = mat[col * 4 + row] };
+#         offset += std::mem::size_of::<f32>();
+#       }
+#     }
+# 
+    let mut uniform_buf = 0;
+    unsafe {
+      gl::CreateBuffers(1, &mut uniform_buf);
+      gl::NamedBufferStorage(uniform_buf, data.len() as _,
+                             data.as_ptr() as _, gl::DYNAMIC_STORAGE_BIT);
+
+      gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, uniform_buf);
+#       
+#       let name = CString::new("TransformBlock").unwrap();
+#       let uniform_blk_index = gl::GetUniformBlockIndex(program, name.as_ptr());
+#       gl::UniformBlockBinding(program, uniform_blk_index, 0);
+    }
+#   }
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+
+用 `glGetUniformBlockIndex()` 查询 uniform 区块的位置：
 
 ```c
-- glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer);
+GLuint glGetUniformBlockIndex(GLuint program,
+                              const GLchar *uniformBlockName);
 ```
+
+```rust
+# use gl::types::*;
+# use sb7::application::Application;
+# 
+# #[derive(Default)]
+# struct App {
+#   program: GLuint,
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs = "#version 460 core
+#     uniform TransformBlock {
+#       float scale;
+#       vec3 translation;
+#       float rotate[3];
+#       mat4 projection_matrix;
+#     } transforms;
+# 
+#     void main() {
+#       gl_Position =  transforms.projection_matrix * vec4(0.0);
+#     }";
+# 
+#     let fs = "#version 460 core
+#     out vec4 color;
+#     void main() {
+#       color = vec4(1.0);
+#     }";
+# 
+#     let program = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs,gl::FRAGMENT_SHADER, true)
+#     ], true);
+# 
+#     use std::ffi::CString;
+#     let uniform_names = [CString::new("TransformBlock.rotate"),
+#                          CString::new("TransformBlock.scale"),
+#                          CString::new("TransformBlock.translation"),
+#                          CString::new("TransformBlock.projection_matrix")];
+#     
+#     // 指向字符串的指针数组
+#     let uniform_names = uniform_names.iter()
+#                                      .map(|s| s.as_ref().unwrap().as_ptr())
+#                                      .collect::<Box<[_]>>();
+#     let mut uniform_indices = [0u32; 4];
+#     unsafe {
+#       gl::GetUniformIndices(program, 4,
+#                             uniform_names.as_ptr(),
+#                             uniform_indices.as_mut_ptr());
+#     }
+#     // [2, 0, 1, 3]
+#     println!("{:?}", uniform_indices);
+# 
+#     let mut offsets     = [0i32; 4];
+#     let mut arr_strides = [0i32; 4];
+#     let mut mat_strides = [0i32; 4];
+# 
+#     unsafe {
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_OFFSET,
+#                               offsets.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_ARRAY_STRIDE,
+#                               arr_strides.as_mut_ptr());
+#       gl::GetActiveUniformsiv(program, 4, uniform_indices.as_ptr(),
+#                               gl::UNIFORM_MATRIX_STRIDE,
+#                               mat_strides.as_mut_ptr());
+#     }
+# 
+#     println!("rotate: offset = {}, stride = {}",
+#               offsets[0], arr_strides[0]);
+#     println!("scale: offset = {}", offsets[1]);
+#     println!("translation: offset = {}", offsets[2]);
+#     println!("projection_matrix: offset = {}, stride = {}",
+#               offsets[3], mat_strides[3]);
+# 
+#     let data = Box::new([0u8; 4096]);
+#     let ptr =  data.as_ptr();
+#     
+#     unsafe {
+#       let offset = offsets[1] as usize;
+#       *(ptr.add(offset) as *mut f32) = 3.0f32;
+#     }
+# 
+#     unsafe {
+#       let offset = offsets[2] as usize;
+#       *(ptr.add(offset) as *mut f32).add(0) = 1.0f32;
+#       *(ptr.add(offset) as *mut f32).add(1) = 2.0f32;
+#       *(ptr.add(offset) as *mut f32).add(2) = 3.0f32;
+#     }
+# 
+#     let rotates: [f32; 3] = [30.0, 40.0, 50.0];
+#     unsafe {
+#       let mut offset = offsets[0] as usize;
+#       for i in 0..3 {
+#         *(ptr.add(offset) as *mut f32) = rotates[i];
+#         offset += arr_strides[0] as usize;
+#       }
+#     }
+# 
+#     let mat : [f32; 16]=  [ 1.0, 2.0, 3.0, 4.0,
+#                             9.0, 8.0, 7.0, 6.0,
+#                             2.0, 4.0, 6.0, 8.0,
+#                             1.0, 3.0, 5.0, 7.0 ];
+#     for col in 0..4 {
+#       let mut offset = offsets[3] as usize
+#                     + mat_strides[3] as usize * col;
+#       for row in 0..4 {
+#         unsafe { *(ptr.add(offset) as *mut f32) = mat[col * 4 + row] };
+#         offset += std::mem::size_of::<f32>();
+#       }
+#     }
+# 
+    let mut uniform_buf = 0;
+    unsafe {
+      gl::CreateBuffers(1, &mut uniform_buf);
+      gl::NamedBufferStorage(uniform_buf, data.len() as _,
+                             data.as_ptr() as _, gl::DYNAMIC_STORAGE_BIT);
+
+      gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, uniform_buf);
+      
+      let name = CString::new("TransformBlock").unwrap();
+      let uniform_blk_index = gl::GetUniformBlockIndex(program, name.as_ptr());
+#       gl::UniformBlockBinding(program, uniform_blk_index, 0);
+    }
+#   }
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.program);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run()
+# }
+```
+最后用 `glUniformBlockBinding()` 将缓冲区对象与 uniform 区块向绑定：
+
+```c
+void glUniformBlockBinding(GLuint program,
+                           GLuint uniformBlockIndex,
+                           GLuint uniformBlockBinding);
+```
+- `uniformBlockIndex`：`glGetUniformBlockIndex()` 返回的 uniform 区块下标
+- `uniformBlockBinding`：缓冲区对象调用 `glBindBufferBase()` 时设置的 `index`
+
+这样就完成了缓冲区对象和 uniform 区块之间的绑定
+
+缓冲区对象和 uniform 区块之间的关系：
+
+[]
 
 ```rust
 let [harry_index, bob_index, susan_index] = ["Harry", "Bob", "Susan"]
