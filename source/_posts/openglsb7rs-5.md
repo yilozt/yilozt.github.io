@@ -4311,10 +4311,10 @@ memoryBarrierAtomicCounter();
 
 ### 创建、初始化纹理
 
-1. 创建纹理，设置纹理类型（glCreateTextures）
-2. 设置存储的图像的大小，分配空间（glTexStorage2D
+1. 创建纹理，设置纹理类型（`glCreateTextures()`）
+2. 设置纹理大小，分配空间（`glTexStorage2D()`）
 
-使用 glCreateTextures() 创建纹理对象，然后使用glTexStorage2D()函数为纹理分配存储空间，使用glBindTexture()将其绑定到GL_TEXTURE_2D目标：
+用 `glCreateTextures()` 创建纹理对象，然后使用 `glTexStorage2D()` 函数为纹理分配存储空间，使用`glBindTexture()` 将其绑定到GL_TEXTURE_2D目标：
 
 ```rust
 use gl::*;
@@ -4335,10 +4335,18 @@ BindTexture(TEXTURE_2D, texture);
 使用 glTexSubImage2D() 向纹理对象写入数据：
 
 ```rust
+# use std::{ffi::CString, ptr::{null, null_mut}};
+# 
 # use sb7::application::*;
+use gl::*;
+# use sb7::gl;
 # 
 # #[derive(Default)]
-# struct App;
+# struct App {
+#   texture: u32,
+#   prog: u32,
+#   vao: u32,
+# }
 # 
 # impl App {
 #   fn generate_texture(&self, data: &mut [f32], width: usize, height: usize) {
@@ -4352,12 +4360,27 @@ BindTexture(TEXTURE_2D, texture);
 #       }
 #     }
 #   }
+# 
+#   fn log_info(&self, obj: u32, log_type: u32) {
+#     let mut buf = [0u8; 2048];
+# 
+#     gl! {
+#       match log_type {
+#         COMPILE_STATUS => GetShaderInfoLog(obj, 2048, null_mut(), buf.as_mut_ptr() as _),
+#         LINK_STATUS => GetProgramInfoLog(obj, 2048, null_mut(), buf.as_mut_ptr() as _),
+#         _ => (),
+#       };  
+#     }
+# 
+#     
+#     let str = std::str::from_utf8(&buf).unwrap_or("invaild utf-8 str");
+#     println!("{}", str);
+#   }
 # }
 # 
 # impl Application for App {
 #   fn startup(&mut self) {
-#     unsafe {
-      use gl::*;
+#     gl! {
 #       let mut texture = 0;
 # 
 #       // 创建纹理
@@ -4385,7 +4408,76 @@ BindTexture(TEXTURE_2D, texture);
                         256, 256, // 宽 x 高
                         RGBA,     // 四通道数据
                         FLOAT,    // 数据类型为浮点数
-                        data.as_ptr() as _)
+                        data.as_ptr() as _);
+# 
+#       self.texture = texture;
+#     }
+# 
+#     let vs_src = "
+#       #version 460 core
+#       void main(void) {
+#         const vec4 vertices[] = vec4[](vec4( 0.75, -0.75, 0.5, 1.0),
+#                                        vec4(-0.75, -0.75, 0.5, 1.0),
+#                                        vec4( 0.75,  0.75, 0.5, 1.0));
+#         gl_Position = vertices[gl_VertexID];
+#       }
+#     ";
+#     let vs_src = CString::new(vs_src).unwrap();
+# 
+#     let fs_src = "
+#       #version 460 core
+#       uniform sampler2D s;
+#       out vec4 color;
+#       void main(void) {
+#         color = texture(s, gl_FragCoord.xy / textureSize(s, 0));
+#       }
+#     ";
+#     let fs_src = CString::new(fs_src).unwrap();
+#     
+#     gl! {
+#       let vs = CreateShader(VERTEX_SHADER);
+#       ShaderSource(vs, 1, &vs_src.as_ptr(), null());
+#       CompileShader(vs);
+#       self.log_info(vs, COMPILE_STATUS);
+# 
+#       let fs = CreateShader(FRAGMENT_SHADER);
+#       ShaderSource(fs, 1, &fs_src.as_ptr(), null());
+#       CompileShader(fs);
+#       self.log_info(fs, COMPILE_STATUS);
+# 
+#       let prog = CreateProgram();
+#       AttachShader(prog, vs);
+#       AttachShader(prog, fs);
+#       LinkProgram(prog);
+#       self.log_info(prog, LINK_STATUS);
+# 
+#       DeleteShader(vs);
+#       DeleteShader(fs);
+# 
+#       UseProgram(prog);
+#       self.prog = prog;
+#     }
+# 
+#     gl! {
+#       let mut vao = 0;
+#       CreateVertexArrays(1, &mut vao);
+#       BindVertexArray(vao);
+#       self.vao = vao;
+#     }
+#   }
+# 
+#   fn render(&self, _current_time: f64) {
+#     gl! {
+#       ClearBufferfv(COLOR, 0, [0.0f32, 0.25, 0.0, 1.0].as_ptr());
+#       DrawArrays(TRIANGLES, 0, 3);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     gl! {
+#       DeleteProgram(self.prog);
+#       DeleteTextures(1, &self.texture);  
+#       DeleteVertexArrays(1, &self.vao);
 #     }
 #   }
 # }
@@ -4394,29 +4486,6 @@ BindTexture(TEXTURE_2D, texture);
 #   App::default().run();
 # }
 ```
-glClearTexSubImage() 函数也可以使用数据初始化纹理：
-
-```c
-void glClearTexSubImage(GLuint texture,
-                        GLint level,
-                        GLint xoffset,
-                        GLint yoffset,
-                        GLint zoffset,
-                        GLsizei width,
-                        GLsizei height,
-                        GLsizei depth,
-                        GLenum format,
-                        GLenum type,
-                        const void * data);
-```
-- 纹理的维度可以从传递的对象里推断出来
-- level：分级细化级别
-- xoffset、yoffset 和 zoffset：在纹理的起始偏移量
-- width、height和depth：写入区域
-- format和type：与glTexSubImage2D()完全相同
-- data：被假定为单个texel值的数据，然后在整个纹理中复制这些数据
-
-texel：纹素（英語：Texel，即texture element或texture pixel的合成字）是纹理元素的简称，它是计算机图形纹理空间中的基本单元。如同图像是由像素排列而成，纹理是由纹素排列表示的。 
 
 ### 纹理目标和类型
 
@@ -4528,7 +4597,8 @@ int textureSamples(sampler2DMS sampler);
 
 ```rust
 let tex = sb7::ktx::file::load("media/textures/tree.ktx").unwrap().0;
-```
+
+
 #### 纹理坐标
 
 在本章前面的简单示例中，我们使用当前片段的窗口空间坐标作为从纹理读取的位置。
@@ -4573,9 +4643,9 @@ void main(void)
 }
 ```
 
-通过向每个顶点传递纹理坐标，我们可以将纹理环绕在物体周围。
+通过向每个顶点传递纹理坐标，可以将纹理环绕在物体周围。
 
-纹理坐标由艺术家使用建模程序手工分配，并存储在目标文件中。如果我们将一个简单的棋盘格图案加载到一个纹理中，并将其应用到一个对象上，我们可以看到纹理是如何缠绕在它周围的:
+纹理坐标一般使用建模软件手工分配，并存储在目标文件中。如果将一个简单的棋盘格图案加载到纹理中，并将其应用到模型上，效果如下:
 
 {% raw %}
 <div class="demo_app" id="_ch5_5_simpletexcoords"></div>
