@@ -6,14 +6,14 @@ date: 2022-01-23 13:35:55
 ---
 
 
-这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。点击代码块上的眼睛按钮可以展开代码，点击复制按钮可以复制完整代码。
 - 随书源码：https://github.com/openglsuperbible/sb7code
 - demo： https://github.com/yilozt/sb7coders
 
-这一章主要介绍了 OpenGL 中两种重要的数据形式：缓冲（Buffer）和纹理（Texture）：
+第五章主要介绍了 OpenGL 中两种重要的数据形式：缓冲（Buffer）和纹理（Texture）：
 
 - 缓冲：OpenGL 里最常用的、用来存储数据的容器，可以类比成 C 里使用 malloc() 分配的一块空间，常用来存储模型的顶点数据。里面的数据线性存储，类似于一维数组。
-- 纹理：用来存储多维的数据结构。如最常见的 2D 纹理，用来当作模型的贴图。
+- 纹理：用来存储多维的数据结构。最常见的应该就是 2D 纹理了，用来当作模型的贴图。
 
 ## 缓冲
 
@@ -4593,18 +4593,427 @@ int textureSamples(sampler2DMS sampler);
 - ktx（Khronos纹理格式）：专门为存储 OpenGL 纹理的东西而设计的。
 - .ktx文件包含了大多数需要传递给 OpenGL 的参数，以便直接从文件加载纹理。
 
-载入：
+用《OpenGL 超级宝典》里自带的函数载入：
 
 ```rust
 let tex = sb7::ktx::file::load("media/textures/tree.ktx").unwrap().0;
+```
 
+也可以使用第三方库（如 stb_image）自己载入图片，只需要在 Cargo.toml 里添加依赖：
+
+```toml
+[dependencies]
+stb_image = "^0.2.3"
+```
+比如要载入这样一张图片：
+
+![opegl-logo](./Opengl-logo.png)
+
+读取图片像素过程：
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: u32,
+#   vbo: u32,
+#   prog: u32,
+#   uniform_trans: i32,
+#   tex: u32
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs_src = "
+#     #version 460 core
+# 
+#     layout (location = 0) in vec3 position;
+#     layout (location = 1) in vec2 tc;
+# 
+#     out vec2 tex_tc;
+# 
+#     uniform mat4 trans = mat4(1.0);
+# 
+#     void main() {
+#       gl_Position = trans * vec4(position, 1.0);
+#       tex_tc = vec2(1.0 - tc.x, tc.y);
+#     }
+#     ";
+# 
+#     let fs_src = "
+#     #version 460 core
+#     
+#     in vec2 tex_tc;
+#     out vec4 color;
+# 
+#     uniform sampler2D s;
+# 
+#     void main() {
+#       vec4 tex_color = texture(s, tex_tc);
+#       color = mix(vec4(1.0), tex_color, tex_color.a);
+#       // color = vec4(1.0);
+#     }
+#     ";
+# 
+#     self.prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs_src, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs_src, gl::FRAGMENT_SHADER, true),
+#     ], true);
+#     let query_name = |name: &str| unsafe {
+#       let name = std::ffi::CString::new(name).unwrap();
+#       gl::GetUniformLocation(self.prog, name.as_ptr())
+#     };
+#     self.uniform_trans = query_name("trans");
+# 
+#     let vertex_position : &[f32]= &[
+#       // position        // tc
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+#        0.5, -0.5, -0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+# 
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#       -0.5,  0.5,  0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+# 
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+# 
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0
+#     ];
+# 
+#     unsafe {
+#       use std::mem::{ size_of, size_of_val };
+#       gl::CreateVertexArrays(1, &mut self.vao);
+#       gl::BindVertexArray(self.vao);
+#       gl::CreateBuffers(1, &mut self.vbo);
+#       gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
+#       gl::NamedBufferData(self.vbo,
+#                           size_of_val(vertex_position) as _,
+#                           vertex_position.as_ptr() as _,
+#                           gl::STATIC_DRAW);
+#       gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               0 as _);
+#       gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               (3 * size_of::<f32>()) as _);
+#       gl::EnableVertexArrayAttrib(self.vao, 0);
+#       gl::EnableVertexArrayAttrib(self.vao, 1);
+#     }
+# 
+    let (width, height, img_data, img_depth) = {
+      use stb_image::image::*;
+      match load("Opengl-logo.png") {
+        LoadResult::ImageU8(img) => (
+          img.width, img.height, img.data, img.depth
+        ),
+        _ => unimplemented!()
+      }
+    };
+#     assert_eq!(img_depth, 4);
+# 
+#     unsafe {
+#       gl::CreateTextures(gl::TEXTURE_2D, 1, &mut self.tex);
+#       gl::BindTexture(gl::TEXTURE_2D, self.tex);
+#       gl::TexStorage2D(gl::TEXTURE_2D, 1,
+#                        gl::RGBA8, width as _, height as _);
+#       gl::TexSubImage2D(gl::TEXTURE_2D, 0,
+#                         0, 0, width as _, height as _,
+#                         gl::RGBA, gl::UNSIGNED_BYTE, img_data.as_ptr() as _);
+#       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S,
+#                         gl::CLAMP_TO_EDGE as _);
+#       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T,
+#                         gl::CLAMP_TO_EDGE as _);
+#     }
+# 
+#     unsafe {
+#       gl::Enable(gl::DEPTH_TEST);
+#       gl::UseProgram(self.prog);
+#     }
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let t = current_time as f32 * 40.0;
+#     let AppConfig { width, height, .. } = self.info();
+#     let trans = sb7::vmath::perspective(45.0,
+#                                         width as f32 / height as f32,
+#                                         0.1, 1000.0)
+#       * sb7::vmath::translate(0.0, 0.0, -3.5)
+#       * sb7::vmath::rotate(t, t, t);
+# 
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0, 1.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, [1.0].as_ptr());
+# 
+#       gl::ProgramUniformMatrix4fv(self.prog,
+#                                   self.uniform_trans, 1,
+#                                   gl::FALSE,
+#                                   std::ptr::addr_of!(trans) as _);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteVertexArrays(1, &self.vao);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteProgram(self.prog);
+#       gl::DeleteTextures(1, &self.tex);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+```
+
+通过载入的图片数据创建纹理对象：
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   vao: u32,
+#   vbo: u32,
+#   prog: u32,
+#   uniform_trans: i32,
+#   tex: u32
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vs_src = "
+#     #version 460 core
+# 
+#     layout (location = 0) in vec3 position;
+#     layout (location = 1) in vec2 tc;
+# 
+#     out vec2 tex_tc;
+# 
+#     uniform mat4 trans = mat4(1.0);
+# 
+#     void main() {
+#       gl_Position = trans * vec4(position, 1.0);
+#       tex_tc = vec2(1.0 - tc.x, tc.y);
+#     }
+#     ";
+# 
+#     let fs_src = "
+#     #version 460 core
+#     
+#     in vec2 tex_tc;
+#     out vec4 color;
+# 
+#     uniform sampler2D s;
+# 
+#     void main() {
+#       vec4 tex_color = texture(s, tex_tc);
+#       color = mix(vec4(1.0), tex_color, tex_color.a);
+#       // color = vec4(1.0);
+#     }
+#     ";
+# 
+#     self.prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs_src, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs_src, gl::FRAGMENT_SHADER, true),
+#     ], true);
+#     let query_name = |name: &str| unsafe {
+#       let name = std::ffi::CString::new(name).unwrap();
+#       gl::GetUniformLocation(self.prog, name.as_ptr())
+#     };
+#     self.uniform_trans = query_name("trans");
+# 
+#     let vertex_position : &[f32]= &[
+#       // position        // tc
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+#        0.5, -0.5, -0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+# 
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#       -0.5,  0.5,  0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+# 
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+# 
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0
+#     ];
+# 
+#     unsafe {
+#       use std::mem::{ size_of, size_of_val };
+#       gl::CreateVertexArrays(1, &mut self.vao);
+#       gl::BindVertexArray(self.vao);
+#       gl::CreateBuffers(1, &mut self.vbo);
+#       gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
+#       gl::NamedBufferData(self.vbo,
+#                           size_of_val(vertex_position) as _,
+#                           vertex_position.as_ptr() as _,
+#                           gl::STATIC_DRAW);
+#       gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               0 as _);
+#       gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               (3 * size_of::<f32>()) as _);
+#       gl::EnableVertexArrayAttrib(self.vao, 0);
+#       gl::EnableVertexArrayAttrib(self.vao, 1);
+#     }
+# 
+#     let (width, height, img_data, img_depth) = {
+#       use stb_image::image::*;
+#       match load("Opengl-logo.png") {
+#         LoadResult::ImageU8(img) => (
+#           img.width, img.height, img.data, img.depth
+#         ),
+#         _ => unimplemented!()
+#       }
+#     };
+#     assert_eq!(img_depth, 4);
+# 
+    unsafe {
+      gl::CreateTextures(gl::TEXTURE_2D, 1, &mut self.tex);
+      gl::BindTexture(gl::TEXTURE_2D, self.tex);
+      gl::TexStorage2D(gl::TEXTURE_2D, 1,
+                       gl::RGBA8, width as _, height as _);
+      gl::TexSubImage2D(gl::TEXTURE_2D, 0,
+                        0, 0, width as _, height as _,
+                        gl::RGBA, gl::UNSIGNED_BYTE, img_data.as_ptr() as _);
+#       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S,
+#                         gl::CLAMP_TO_EDGE as _);
+#       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T,
+#                         gl::CLAMP_TO_EDGE as _);
+    }
+# 
+#     unsafe {
+#       gl::Enable(gl::DEPTH_TEST);
+#       gl::UseProgram(self.prog);
+#     }
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let t = current_time as f32 * 40.0;
+#     let AppConfig { width, height, .. } = self.info();
+#     let trans = sb7::vmath::perspective(45.0,
+#                                         width as f32 / height as f32,
+#                                         0.1, 1000.0)
+#       * sb7::vmath::translate(0.0, 0.0, -3.5)
+#       * sb7::vmath::rotate(t, t, t);
+# 
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0, 1.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, [1.0].as_ptr());
+# 
+#       gl::ProgramUniformMatrix4fv(self.prog,
+#                                   self.uniform_trans, 1,
+#                                   gl::FALSE,
+#                                   std::ptr::addr_of!(trans) as _);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteVertexArrays(1, &self.vao);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteProgram(self.prog);
+#       gl::DeleteTextures(1, &self.tex);
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+```
+
+效果大概是这样子：
+
+{%raw%}
+<div id="_ch5_4_0_load_png" class="demo_app"></div>
+{%endraw%}
 
 #### 纹理坐标
 
-在本章前面的简单示例中，我们使用当前片段的窗口空间坐标作为从纹理读取的位置。
+在着色器里一般会用 texture() 来读取纹理数据，一张纹理对应的坐标范围为 0.0 ~ 1.0：
 
-- 可以使用任何你想要的任何值
-- 纹理坐标一般会作为顶点属性传入顶点着色器，然后输出到片段着色器：
+![tex_coord](tex_coords.png)
+
+- 但其实可以将纹理坐标设置为任意值，超出 0.0 ~ 1.0 的部分，OpenGL 会将纹理按照一定的方式进行平铺处理
+- 纹理坐标一般会作为顶点属性传入顶点着色器，然后输出到片段着色器，中间的像素的纹理坐标由 GPU 生成
+
+顶点数据：
+
+```rust
+let vertex_position : &[f32]= &[
+  // position        // tc
+  -0.5, -0.5, -0.5,  0.0, 0.0,
+   0.5, -0.5, -0.5,  1.0, 0.0,
+   0.5,  0.5, -0.5,  1.0, 1.0,
+   ...
+];
+```
+对应的顶点着色器：
 
 ```glsl
 #version 450 core
@@ -4625,6 +5034,8 @@ void main(void)
   gl_Position = proj_matrix * pos_vs;
 }
 ```
+片段着色器：
+
 ```glsl
 #version 450 core
 layout (binding = 0) uniform sampler2D tex_object;
@@ -4645,23 +5056,26 @@ void main(void)
 
 通过向每个顶点传递纹理坐标，可以将纹理环绕在物体周围。
 
-纹理坐标一般使用建模软件手工分配，并存储在目标文件中。如果将一个简单的棋盘格图案加载到纹理中，并将其应用到模型上，效果如下:
+纹理坐标一般使用建模软件进行分配，并存储模型文件里。将棋盘格图案加载到纹理中，并将其应用到模型上，效果如下:
 
 {% raw %}
 <div class="demo_app" id="_ch5_5_simpletexcoords"></div>
 {% endraw %}
 
-
 ### 控制纹理数据的读取方式
 
-OpenGL在如何从纹理中读取数据并将其返回给着色器方面提供了很大的灵活性。通常，纹理坐标是规范化的--也就是说，它们的范围在0.0和1.0之间。OpenGL允许您控制当您提供的纹理坐标超出此范围时会发生什么。这被称为采样器的包装模式。另外，你可以决定如何计算真实样本之间的值。这被称为采样器的过滤模式。控制采样器的包装和过滤模式的参数存储在采样器对象中：
+OpenGL 在读取纹理数据的方式十分灵活，纹理坐标的范围一般是规范化的，在0.0 到 1.0之间，在 OpenGL 里，用来控制纹理读取方式的对象为采样器对象，其中包含了两种常用的属性：
+
+- WRAP_MODE：环绕方式，当纹理坐标超出 0.0 ~ 1.0 时，控制 OpenGL 如何读取纹理像素
+- FILTER_MODE：过滤方式，当纹理在渲染时被缩放时，控制 OpenGL 对像素的采样方式
 
 创建采样器对象：
 
 ```c
 void glCreateSamplers(GLsizei n, GLuint * samplers);
 ```
-设置采样器参数：
+
+设置采样器属性：
 
 ```c
 void glSamplerParameteri(GLuint sampler,
@@ -4681,6 +5095,7 @@ void glBindSampler(GLuint unit, GLuint sampler);
 ```rust
 use gl::*;
 # use sb7::application::*;
+# use imgui_glfw_rs::glfw;
 # use std::{ffi::CString, ptr::addr_of};
 # 
 # #[derive(Default)]
@@ -4854,13 +5269,23 @@ struct App {
 # }
 ```
 
-glBindSampler（）不是使用纹理目标，而是使用它应该绑定sampler对象的纹理单元的索引。sampler对象和绑定到给定纹理单元的纹理对象一起形成了一组完整的数据和参数，这些数据和参数是根据着色器的要求构造纹理所需的。通过从纹理数据中分离纹理采样器的参数，三个重要的行为成为可能:
+`glBindSampler()` 的第一个参数 `unit` 指的是**纹理单元**，本质上纹理单元只是一个大于等于 0 的整数，可以看成纹理对象和采样器对象之间的桥梁。除了调用 `glBindSampler()` 以外，还需要用 `glBindTextureUnit()` 为纹理对象指定纹理单元：
 
-- 您可以对大量纹理使用相同的采样参数集，而不必为每个纹理指定这些参数
-- 您可以更改绑定到纹理单元的纹理，而无需更新采样器参数。
-- 您可以同时使用多组采样器参数从同一纹理中读取
+```c
+void glBindTextureUnit(GLuint unit,
+                       GLuint texture);
+```
+纹理单元、纹理对象、采样器对象之间的关系如下，每个纹理单元只能和一个纹理对象绑定：
 
-尽管非平凡的应用程序可能会选择使用它们自己的采样器对象，但每个纹理都有效地包含一个嵌入的采样器对象，当没有采样器对象绑定到相应的纹理单元时，该采样器对象包括用于该纹理的采样参数。您可以将其视为纹理的默认采样参数。若要访问存储在纹理对象内的采样器对象，请调用：
+![test](sampler_texture.png)
+
+其实类似的配置过程之前已经用过了，配置 vao 的时候，vbo 和顶点属性之间也隔着一个 binding index。这样的好处是提供了足够的灵活性：
+
+- 可以将多个纹理绑定到相同的采样器上，这样就不用为每个纹理对象单独配置
+- 如果需要修改纹理的参数的话，直接更新绑定点就行
+- 可以将多个采样器绑到同一个纹理单元上
+
+其实每个纹理对象已经内置了默认的采样器，用 `glTextureParameteri() / glTextureParameterf()` 也可以直接设置纹理对象的属性：
 
 ```c
 void glTextureParameterf(GLuint texture,
@@ -4870,21 +5295,7 @@ void glTextureParameteri(GLuint texture,
                          GLenum pname,
                          GLint param);
 ```
-如果你想在一个着色器中使用多个纹理，你需要创建多个采样器制服，并将它们设置为引用不同的纹理单元。您还需要同时将多个纹理绑定到上下文中。为了实现这一点，OpenGL支持多个纹理单元。可以通过使用GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS参数调用glGetIntegerv（）来查询所支持的单元数，如:
-
-```c
-GLint units;
-glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &units);
-```
-
-这将告诉你最大数量的纹理单位，可以访问所有着色器阶段在任何一个时间。要将纹理绑定到特定的纹理单元，您需要调用glBindTextureUnit()，而不是像您到目前为止所做的那样调用glBindTextureUnit，它的原型是
-
-```c
-void glBindTextureUnit(GLuint unit,
-                       GLuint texture)
-```
-
-这里，unit是要绑定纹理的单元的从零开始的索引，texture是要绑定的纹理对象的名称。例如，我们可以通过执行以下操作绑定多个纹理：
+如果需要在同一个着色器中使用多个纹理，需要将纹理绑定到不同的纹理单元：
 
 ```c
 GLuint textures[3];
@@ -4897,14 +5308,524 @@ glBindTextureUnit(0, textures[0]);
 glBindTextureUnit(1, textures[1]);
 glBindTextureUnit(2, textures[2]);
 ```
-
-一旦你把多个纹理绑定到你的上下文中，你需要让你的着色器中的采样器制服参考不同的单位。采样器（表示一个纹理和一组采样参数）由着色器中的统一变量表示。如果您不初始化它们，它们将在默认情况下引用单元0。对于使用单个纹理的简单应用程序来说，这可能很好（您会注意到，到目前为止，我们在示例中已经满足了默认情况），但在更复杂的应用程序中，制服需要初始化以引用正确的纹理单元。为此，可以在着色器编译时使用着色器代码中的绑定布局限定符初始化其值。要创建三个采样器制服，涉及纹理单元0、1和2，我们可以编写:
+然后在着色器里创建对应的 sampler 变量:
 
 ```glsl
 layout (binding = 0) uniform sampler2D foo;
 layout (binding = 1) uniform sampler2D bar;
 layout (binding = 2) uniform sampler2D baz;
 ```
+当然也可以创建 sampler 变量的数组，效果其实是一样的：
+
+```glsl
+layout (binding = 0) uniform sampler2D samplers[3];
+```
+下面看一个简单的例子，在着色器里定义 sampler2D 数组，在立方体的每个面渲染下面的图片，每张大小为 24x24：
+
+{%raw%}
+<div style="margin: auto">
+<img src="assert_1.png" style="display: inline-block"/>
+<img src="assert_2.png" style="display: inline-block"/>
+<img src="assert_3.png" style="display: inline-block"/>
+<img src="assert_4.png" style="display: inline-block"/>
+<img src="assert_5.png" style="display: inline-block"/>
+<img src="assert_6.png" style="display: inline-block"/>
+</div>
+{%endraw%}
+
+在片段着色器里定义 sampler2D 数组：
+
+```glsl
+#version 460 core
+
+in vec2 tex_tc;
+in flat int face_index;
+out vec4 color;
+
+layout (binding = 0) uniform sampler2D s[6];
+
+void main() {
+  color = texture(s[face_index], tex_tc);
+}
+```
+`tex_tc` 代表纹理坐标，`face_index` 表示第几个面。对应的顶点着色器：
+
+```glsl
+#version 460 core
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec2 tc;
+
+out vec2 tex_tc;
+out flat int face_index;
+
+uniform mat4 trans = mat4(1.0);
+
+void main() {
+  gl_Position = trans * vec4(position, 1.0);
+  tex_tc = vec2(tc.x, 1.0 - tc.y);
+  face_index = gl_VertexID / 6;
+}
+```
+
+顶点数据（太长了自行展开，或者点击复制按钮）：
+
+```rust
+let vertex_position : &[f32]= &[
+  // position        // tc
+  -0.5, -0.5, -0.5,  0.0, 0.0,
+   0.5, -0.5, -0.5,  1.0, 0.0,
+  //
+#    0.5,  0.5, -0.5,  1.0, 1.0,
+#    0.5,  0.5, -0.5,  1.0, 1.0,
+#   -0.5,  0.5, -0.5,  0.0, 1.0,
+#   -0.5, -0.5, -0.5,  0.0, 0.0,
+# 
+#   -0.5, -0.5,  0.5,  0.0, 0.0,
+#    0.5, -0.5,  0.5,  1.0, 0.0,
+#    0.5,  0.5,  0.5,  1.0, 1.0,
+#    0.5,  0.5,  0.5,  1.0, 1.0,
+#   -0.5,  0.5,  0.5,  0.0, 1.0,
+#   -0.5, -0.5,  0.5,  0.0, 0.0,
+# 
+#   -0.5,  0.5,  0.5,  1.0, 0.0,
+#   -0.5,  0.5, -0.5,  1.0, 1.0,
+#   -0.5, -0.5, -0.5,  0.0, 1.0,
+#   -0.5, -0.5, -0.5,  0.0, 1.0,
+#   -0.5, -0.5,  0.5,  0.0, 0.0,
+#   -0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#    0.5,  0.5,  0.5,  1.0, 0.0,
+#    0.5,  0.5, -0.5,  1.0, 1.0,
+#    0.5, -0.5, -0.5,  0.0, 1.0,
+#    0.5, -0.5, -0.5,  0.0, 1.0,
+#    0.5, -0.5,  0.5,  0.0, 0.0,
+#    0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#   -0.5, -0.5, -0.5,  0.0, 1.0,
+#    0.5, -0.5, -0.5,  1.0, 1.0,
+#    0.5, -0.5,  0.5,  1.0, 0.0,
+#    0.5, -0.5,  0.5,  1.0, 0.0,
+#   -0.5, -0.5,  0.5,  0.0, 0.0,
+#   -0.5, -0.5, -0.5,  0.0, 1.0,
+# 
+#   -0.5,  0.5, -0.5,  0.0, 1.0,
+#    0.5,  0.5, -0.5,  1.0, 1.0,
+#    0.5,  0.5,  0.5,  1.0, 0.0,
+#    0.5,  0.5,  0.5,  1.0, 0.0,
+#   -0.5,  0.5,  0.5,  0.0, 0.0,
+#   -0.5,  0.5, -0.5,  0.0, 1.0
+];
+```
+
+读取纹理数据，分配纹理单元：
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   prog: u32,
+#   uniform_trans: i32,
+#   vao: u32,
+#   vbo: u32,
+#   texs: [u32; 6],
+#   samplers: [u32; 2],
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vertex_position : &[f32]= &[
+#       // position        // tc
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+#        0.5, -0.5, -0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+# 
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#       -0.5,  0.5,  0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+# 
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+# 
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0
+#     ];
+# 
+#     let vs_src = "
+#     #version 460 core
+# 
+#     layout (location = 0) in vec3 position;
+#     layout (location = 1) in vec2 tc;
+# 
+#     out vec2 tex_tc;
+#     out flat int face_index;
+# 
+#     uniform mat4 trans = mat4(1.0);
+# 
+#     void main() {
+#       gl_Position = trans * vec4(position, 1.0);
+#       tex_tc = vec2(tc.x, 1.0 - tc.y);
+#       face_index = gl_VertexID / 6;
+#     }
+#     ";
+# 
+#     let fs_src = "
+#     #version 460 core
+#     
+#     in vec2 tex_tc;
+#     in flat int face_index;
+#     out vec4 color;
+# 
+#     layout (binding = 0) uniform sampler2D s[6];
+# 
+#     void main() {
+#       color = texture(s[face_index], tex_tc);
+#     }
+#     ";
+# 
+#     self.prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs_src, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs_src, gl::FRAGMENT_SHADER, true),
+#     ], true);
+#     let query_name = |name: &str| unsafe {
+#       let name = std::ffi::CString::new(name).unwrap();
+#       gl::GetUniformLocation(self.prog, name.as_ptr())
+#     };
+#     self.uniform_trans = query_name("trans");
+# 
+#     unsafe {
+#       use std::mem::{ size_of, size_of_val };
+#       gl::CreateVertexArrays(1, &mut self.vao);
+#       gl::BindVertexArray(self.vao);
+#       gl::CreateBuffers(1, &mut self.vbo);
+#       gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
+#       gl::NamedBufferData(self.vbo,
+#                           size_of_val(vertex_position) as _,
+#                           vertex_position.as_ptr() as _,
+#                           gl::STATIC_DRAW);
+#       gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               0 as _);
+#       gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               (3 * size_of::<f32>()) as _);
+#       gl::EnableVertexArrayAttrib(self.vao, 0);
+#       gl::EnableVertexArrayAttrib(self.vao, 1);
+#     }
+# 
+#     unsafe {
+      gl::CreateTextures(gl::TEXTURE_2D, 6, self.texs.as_mut_ptr());
+# 
+#       // create samplers
+#       gl::CreateSamplers(2, self.samplers.as_mut_ptr());
+# 
+#       // set filter mode
+#       gl::SamplerParameteri(self.samplers[0],
+#                             gl::TEXTURE_MAG_FILTER,
+#                             gl::LINEAR as _);
+#       gl::SamplerParameteri(self.samplers[1],
+#                             gl::TEXTURE_MAG_FILTER,
+#                             gl::NEAREST as _);
+# 
+      for i in 0..6 {
+        use stb_image::image::{ load, LoadResult::*};
+        let (w, h, data) = match load(&format!("assert_{}.png", i + 1)) {
+          ImageU8(img) => (img.width, img.height, img.data),
+          _ => unimplemented!()
+        };
+        gl::BindTexture(gl::TEXTURE_2D, self.texs[i]);
+        gl::TextureStorage2D(self.texs[i], 1, gl::RGBA8, w as _, h as _);
+        gl::TexSubImage2D(gl::TEXTURE_2D, 0,
+                          0, 0, w as _, h as _,
+                          gl::RGBA, gl::UNSIGNED_BYTE, data.as_ptr() as _);
+
+        // bind texture to texture unit
+        gl::BindTextureUnit(i as _, self.texs[i]);
+# 
+#         // bind texture unit to sampler object
+#         gl::BindSampler(i as _, self.samplers[i % 2]);
+      }
+#     }
+# 
+#     unsafe {
+#       gl::Enable(gl::DEPTH_TEST);
+#       gl::UseProgram(self.prog);
+#     }
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let t = current_time as f32 * 40.0;
+#     let AppConfig { width, height, .. } = self.info();
+#     let trans = sb7::vmath::perspective(45.0,
+#                                         width as f32 / height as f32,
+#                                         0.1, 1000.0)
+#       * sb7::vmath::translate(0.0, 0.0, -3.5)
+#       * sb7::vmath::rotate(t, t, t);
+# 
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0, 1.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, [1.0].as_ptr());
+# 
+#       gl::ProgramUniformMatrix4fv(self.prog,
+#                                   self.uniform_trans, 1,
+#                                   gl::FALSE,
+#                                   std::ptr::addr_of!(trans) as _);
+#       gl::BindTexture(gl::TEXTURE_2D, self.texs[0]);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.prog);
+#       gl::DeleteVertexArrays(1, &self.prog);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteTextures(6, self.texs.as_ptr());
+#       gl::DeleteSamplers(2, self.samplers.as_ptr());
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+```
+
+创建采样器对象，设置参数，将采样器对象绑定到纹理对象上：
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App {
+#   prog: u32,
+#   uniform_trans: i32,
+#   vao: u32,
+#   vbo: u32,
+#   texs: [u32; 6],
+#   samplers: [u32; 2],
+# }
+# 
+# impl Application for App {
+#   fn startup(&mut self) {
+#     let vertex_position : &[f32]= &[
+#       // position        // tc
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+#        0.5, -0.5, -0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 0.0,
+# 
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 1.0,
+#       -0.5,  0.5,  0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+# 
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5, -0.5,  1.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5,  0.5,  0.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+# 
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+#        0.5, -0.5, -0.5,  1.0, 1.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#        0.5, -0.5,  0.5,  1.0, 0.0,
+#       -0.5, -0.5,  0.5,  0.0, 0.0,
+#       -0.5, -0.5, -0.5,  0.0, 1.0,
+# 
+#       -0.5,  0.5, -0.5,  0.0, 1.0,
+#        0.5,  0.5, -0.5,  1.0, 1.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#        0.5,  0.5,  0.5,  1.0, 0.0,
+#       -0.5,  0.5,  0.5,  0.0, 0.0,
+#       -0.5,  0.5, -0.5,  0.0, 1.0
+#     ];
+# 
+#     let vs_src = "
+#     #version 460 core
+# 
+#     layout (location = 0) in vec3 position;
+#     layout (location = 1) in vec2 tc;
+# 
+#     out vec2 tex_tc;
+#     out flat int face_index;
+# 
+#     uniform mat4 trans = mat4(1.0);
+# 
+#     void main() {
+#       gl_Position = trans * vec4(position, 1.0);
+#       tex_tc = vec2(tc.x, 1.0 - tc.y);
+#       face_index = gl_VertexID / 6;
+#     }
+#     ";
+# 
+#     let fs_src = "
+#     #version 460 core
+#     
+#     in vec2 tex_tc;
+#     in flat int face_index;
+#     out vec4 color;
+# 
+#     layout (binding = 0) uniform sampler2D s[6];
+# 
+#     void main() {
+#       color = texture(s[face_index], tex_tc);
+#     }
+#     ";
+# 
+#     self.prog = sb7::program::link_from_shaders(&[
+#       sb7::shader::from_str(vs_src, gl::VERTEX_SHADER, true),
+#       sb7::shader::from_str(fs_src, gl::FRAGMENT_SHADER, true),
+#     ], true);
+#     let query_name = |name: &str| unsafe {
+#       let name = std::ffi::CString::new(name).unwrap();
+#       gl::GetUniformLocation(self.prog, name.as_ptr())
+#     };
+#     self.uniform_trans = query_name("trans");
+# 
+#     unsafe {
+#       use std::mem::{ size_of, size_of_val };
+#       gl::CreateVertexArrays(1, &mut self.vao);
+#       gl::BindVertexArray(self.vao);
+#       gl::CreateBuffers(1, &mut self.vbo);
+#       gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
+#       gl::NamedBufferData(self.vbo,
+#                           size_of_val(vertex_position) as _,
+#                           vertex_position.as_ptr() as _,
+#                           gl::STATIC_DRAW);
+#       gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               0 as _);
+#       gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE,
+#                               (5 * size_of::<f32>()) as _,
+#                               (3 * size_of::<f32>()) as _);
+#       gl::EnableVertexArrayAttrib(self.vao, 0);
+#       gl::EnableVertexArrayAttrib(self.vao, 1);
+#     }
+# 
+#     unsafe {
+#       gl::CreateTextures(gl::TEXTURE_2D, 6, self.texs.as_mut_ptr());
+# 
+#       // create samplers
+      gl::CreateSamplers(2, self.samplers.as_mut_ptr());
+# 
+#       // set filter mode
+      gl::SamplerParameteri(self.samplers[0],
+                            gl::TEXTURE_MAG_FILTER,
+                            gl::LINEAR as _);
+      gl::SamplerParameteri(self.samplers[1],
+                            gl::TEXTURE_MAG_FILTER,
+                            gl::NEAREST as _);
+# 
+      for i in 0..6 {
+#         use stb_image::image::{ load, LoadResult::*};
+#         let (w, h, data) = match load(&format!("assert_{}.png", i + 1)) {
+#           ImageU8(img) => (img.width, img.height, img.data),
+#           _ => unimplemented!()
+#         };
+#         gl::BindTexture(gl::TEXTURE_2D, self.texs[i]);
+#         gl::TextureStorage2D(self.texs[i], 1, gl::RGBA8, w as _, h as _);
+#         gl::TexSubImage2D(gl::TEXTURE_2D, 0,
+#                           0, 0, w as _, h as _,
+#                           gl::RGBA, gl::UNSIGNED_BYTE, data.as_ptr() as _);
+# 
+#         // bind texture to texture unit
+#         gl::BindTextureUnit(i as _, self.texs[i]);
+# 
+        // bind texture unit to sampler object
+        gl::BindSampler(i as _, self.samplers[i % 2]);
+      }
+#     }
+# 
+#     unsafe {
+#       gl::Enable(gl::DEPTH_TEST);
+#       gl::UseProgram(self.prog);
+#     }
+#   }
+# 
+#   fn render(&self, current_time: f64) {
+#     let t = current_time as f32 * 40.0;
+#     let AppConfig { width, height, .. } = self.info();
+#     let trans = sb7::vmath::perspective(45.0,
+#                                         width as f32 / height as f32,
+#                                         0.1, 1000.0)
+#       * sb7::vmath::translate(0.0, 0.0, -3.5)
+#       * sb7::vmath::rotate(t, t, t);
+# 
+#     unsafe {
+#       gl::ClearBufferfv(gl::COLOR, 0, [0.0, 0.0, 0.0, 1.0].as_ptr());
+#       gl::ClearBufferfv(gl::DEPTH, 0, [1.0].as_ptr());
+# 
+#       gl::ProgramUniformMatrix4fv(self.prog,
+#                                   self.uniform_trans, 1,
+#                                   gl::FALSE,
+#                                   std::ptr::addr_of!(trans) as _);
+#       gl::BindTexture(gl::TEXTURE_2D, self.texs[0]);
+#       gl::DrawArrays(gl::TRIANGLES, 0, 36);
+#     }
+#   }
+# 
+#   fn shutdown(&mut self) {
+#     unsafe {
+#       gl::DeleteProgram(self.prog);
+#       gl::DeleteVertexArrays(1, &self.prog);
+#       gl::DeleteBuffers(1, &self.vbo);
+#       gl::DeleteTextures(6, self.texs.as_ptr());
+#       gl::DeleteSamplers(2, self.samplers.as_ptr());
+#     }
+#   }
+# }
+# 
+# fn main() {
+#   App::default().run();
+# }
+```
+
+{%raw%}
+<div class="demo_app" id="_ch5_6_0_texture_unit"></div>
+{%endraw%}
+
 
 #### 纹理过滤
 

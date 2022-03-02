@@ -134,6 +134,7 @@ theme_config:
 
   # Disable cdn
   cdn:
+    enable: false
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
