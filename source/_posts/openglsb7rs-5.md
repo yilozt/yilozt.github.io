@@ -6,7 +6,10 @@ date: 2022-01-23 13:35:55
 ---
 
 
-这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。点击代码块上的眼睛按钮可以展开代码，点击复制按钮可以复制完整代码。
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例，部分 demo 迁移到了 WebGL，笔记里部分示例其实是用 WebGL 实时渲染出来的。
+
+点击代码块上的眼睛按钮可以展开代码，点击复制按钮可以复制完整代码。
+
 - 随书源码：https://github.com/openglsuperbible/sb7code
 - demo： https://github.com/yilozt/sb7coders
 
@@ -5829,26 +5832,106 @@ let vertex_position : &[f32]= &[
 
 #### 纹理过滤
 
-纹理被缩放时使用的缩放方法，参数：GL_TEXTURE_MIN_FILTER / GL_TEXTURE_MAG_FILTER：
+纹理的大小与实际上渲染在屏幕上的大小一般都不是一比一的关系，会进行缩放与拉伸。`GL_TEXTURE_MIN_FILTER / GL_TEXTURE_MAG_FILTER` 用来设置纹理的缩放方式，`MIN` 表示纹理被缩小时采用的缩放方式，`MAG` 代表纹理放大时采用的方式，可能的取值：
 
-- GL_NEAREST：邻近缩放？
-- GL_LINEAR：平滑缩放
+- GL_NEAREST：邻近采样，纹理缩放时会使用离纹理坐标最近的像素点
+- GL_LINEAR：线性采样，纹理缩放时会将纹理坐标附近的点求和取平均值
+
+用 `glTexParameter() / glSamplerParameter()` 来设置纹理的过滤方式：
+
+```rust
+gl::TextureParameteri(gl::TEXTURE_2D,
+                      gl::TEXTURE_MAG_FILTER, gl::NEAREST as _);
+gl::TextureParameteri(gl::TEXTURE_2D,
+                      gl::TEXTURE_MIN_FILTER, gl::LINEAR as _);
+```
+效果如下，左边是 `GL_LINEAR` ，右边是 `GL_NEARST`，原图是一张很小的图片，在渲染时被放大了：
 
 {% raw %}
 <div class="demo_app" id="_ch5_6_texturefilter"></div>
 {% endraw %}
 
-#### 分级细化纹理
+#### 多级渐远纹理（mipmap）
 
-{% raw %}
-<div class="demo_app" id="_ch5_7_0_tunnel_scintillation"></div>
-{% endraw %}
+在书里被翻译成 mip 贴图。是一种强大的纹理技术，在可以提高渲染性能同时提高场景质量，主要解决了渲染纹理时遇到的两个问题：
 
-#### 分级细化纹理过滤
+- 闪烁：纹理在屏幕上的显示大小远远小于纹理的实际大小的时候发生，在移动场景的时候会更加明显：
+  {% raw %}
+  <div class="demo_app" id="_ch5_7_0_tunnel_scintillation"></div>
+  {% endraw %}
+  可以点击 `Enable mipmap filter` 查看启用多级渐远纹理之后的效果
+- 性能问题：渲染远处纹理时，往往只读取纹理的一小部分数据（浪费）
 
-#### 分级细化纹理生成
+解决办法是在渲染远处纹理时，使用较小的纹理贴图，这其实也就是多级渐远纹理的功能。多级渐远纹理由一系列纹理图像组成，每一层在各轴上缩小二分之一：
 
-#### 分级细化纹理应用
+![mipmaps](mipmaps.png)
+
+分级细化纹理的总层数在分配空间时通过 `glTexStorage2D()` 的 `levels` 参数指定：
+
+```c
+void glTexStorage2D(GLenum target,
+                    GLsizei levels,
+                    GLenum internalformat,
+                    GLsizei width,
+                    GLsizei height);
+```
+
+将 256x256 的 2D 纹理的多级渐远纹理设置为 5：
+
+```rust
+gl::TexStorage2D(gl::TEXTURE_2D,  // 已经绑到 TEXTURE_2D 的纹理
+                 5,               // 多级渐远纹理的总层数
+                 gl::RGBA,        // 纹理格式
+                 256, 256);       // 256x256
+```
+
+这里将总层数设置成 5，第 0 层大小为 256x256，即原始数据，第 1 层大小为 128x128，第二层大小为 64x64，以此类推，第 4 层的大小为 16x16。因为总层数是 5，多级渐远纹理渲染最小图像大小为 16x16。
+
+向多级渐远纹理设置图像数据，一般有两种方式：
+
+- 用 `glTexSubImage2D()` 写入第 0 层的数据（原始数据，之前一直用的这种方式设置纹理数据），然后用 `glGenerateMipmap()` 让 OpenGL 自己生成纹理的缩小版本，生成剩下的层数（方便）：
+
+```rust
+gl::TexSubImage2D(gl::TEXTURE_2D, 0,
+                  0, 0, 256, 256,
+                  gl::RGBA, gl::UNSIGNED_BYTE,
+                  img_data_256 as _);
+gl::GenerateMipmap(gl::TEXTURE_2D);
+```
+- 用 `glTexSubImage2D()` 手动为每一层写入图像数据，书上用来[载入 ktx 文件的代码](https://github.com/openglsuperbible/sb7code/blob/3f80b7a829442e2de9199a15e08ce7d09fd9260e/src/sb7/sb7ktx.cpp#L257)里也有类似的逻辑：
+
+```rust
+gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, 256, 256,
+                  gl::RGBA, gl::UNSIGNED_BYTE,
+                  img_data_256 as _);
+gl::TexSubImage2D(gl::TEXTURE_2D, 1, 0, 0, 128, 128,
+                  gl::RGBA, gl::UNSIGNED_BYTE,
+                  img_data_128 as _);
+gl::TexSubImage2D(gl::TEXTURE_2D, 2, 0, 0, 64, 64,
+                  gl::RGBA, gl::UNSIGNED_BYTE,
+                  img_data_64 as _);
+// ...
+```
+多级渐远纹理需要设置过滤方式后才会生效，`GL_TEXTURE_MIN_FILTER` 需要设置成以下选项之一：
+
+| 过滤方式                      | 描述                                                        |
+|:----------------------------|:------------------------------------------------------------|
+| GL_NEAREST_MIPMAP_NEAREST 	| 使用最邻近的多级渐远纹理来匹配像素大小，并使用邻近插值进行纹理采样      |
+| GL_LINEAR_MIPMAP_NEAREST 	  | 使用最邻近的多级渐远纹理来匹配像素大小，并使用线性插值进行纹理采样      |
+| GL_NEAREST_MIPMAP_LINEAR 	  | 在两个最匹配像素大小的多级渐远纹理之间进行线性插值，使用邻近插值进行采样 |
+| GL_LINEAR_MIPMAP_LINEAR 	  | 在两个最匹配像素大小的多级渐远纹理之间进行线性插值，使用线性插值进行采样 |
+
+格式类似于 `GL_<selector>_MIPMAP_<filter>`，`selector` 用来说明用哪一层，`filter` 用来说明选好哪层后，如何缩放纹理。
+
+`GL_TEXTURE_MIN_FILTER` 只需要设置成 `GL_NEARST` 或 `GL_LINEAR`：
+
+```rust
+gl::TexParameteri(gl::GL_TEXTURE_2D,gl::GL_TEXTURE_MIN_FILTER,
+                  gl::GL_LINEAR_MIPMAP_LINEAR);
+gl::TexParameteri(gl::GL_TEXTURE_2D, gl::GL_TEXTURE_MAG_FILTER,
+                  gl::GL_LINEAR);
+```
+启用 `GL_LINEAR_MIPMAP_LINEAR` 效果如下：
 
 {% raw %}
 <div class="demo_app" id="_ch5_7_tunnel"></div>
@@ -5856,9 +5939,40 @@ let vertex_position : &[f32]= &[
 
 #### 环绕方式
 
+环绕方式指定了当纹理坐标超出 0.0 ~ 1.0 的范围时，OpenGL 以何种方式平铺图像。
+
+需要将 `GL_TEXTURE_WRAP_S / GL_TEXTURE_WRAP_T / GL_TEXTURE_WRAP_R` 作为 `glTexParameter() / glSamplerParameter()` 的 `pname` 参数传入。`GL_TEXTURE_WRAP_S`、`GL_TEXTURE_WRAP_T` 代表纹理坐标的方向，`str` 与 `xyz` 是等价的。对应的取值如下：
+
+| 环绕方式             | 说明                              |
+|:-------------------|:----------------------------------|
+| GL_REPEAT          | 正常平铺                           |
+| GL_MIRRORED_REPEAT | 镜像平铺                           |
+| GL_CLAMP_TO_EDGE   | 拉伸边缘像素                        |
+| GL_CLAMP_TO_BORDER | 在 0~1 内绘制纹理，超出的部分用纯色填充 |
+
+```rust
+gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as _);
+gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as _);
+```
+如果要使用 `GL_CLAMP_TO_BORDER`，需要先将 `GL_TEXTURE_BORDER_COLOR` 传入 `glSamplerParameterfv() / glTexParameterfv()` 来设置要填充的纯色：
+
+```rust
+let color = [0.0, 0.1, 0.6, 1.0f32];
+gl::TexParameterfv(gl::TEXTURE_2D,
+                   gl::TEXTURE_BORDER_COLOR, color.as_ptr());
+gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S,
+                  gl::GL_TEXTURE_BORDER_COLOR as _);
+gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T,
+                  gl::GL_TEXTURE_BORDER_COLOR as _);
+```
+
+`GL_TEXTURE_BORDER_COLOR`、`GL_MIRRORED_REPEAT`、`GL_CLAMP_TO_EDGE`、`GL_REPEAT` 对应的效果：
+
 {% raw %}
 <div class="demo_app" id="_ch5_8_wrapmodes"></div>
 {% endraw %}
+
+还有一种特殊的环绕方式：`GL_MIRROR_CLAMP_TO_EDGE`，可以看成 `GL_MIRRORED_REPEAT` 和 `GL_CLAMP_TO_EDGE` 的组合，只将纹理进行一次镜像平铺，之后拉伸边缘像素：
 
 {% raw %}
 <div class="demo_app" id="_ch5_9_mirrorclampedge"></div>
@@ -5866,11 +5980,225 @@ let vertex_position : &[f32]= &[
 
 ### 数组纹理
 
+可以类比为一个相册，将相同尺寸的纹理数据塞到一个对象里，这个对象就是数组纹理，和数组类似，可以根据元素的下标访问里面的元素。其实和多级渐远纹理类似，都是在同一个对象里存储多张纹理数据。
+
+OpenGL 支持 1D、 2D 数组纹理，也支持立方体贴图数组纹理。但还不支持 3D 数组纹理。
+
+创建、初始化 2D 数组纹理：
+
+```rust
+let mut tex = 0;
+
+gl::CreateTextures(gl::TEXTURE_2D_ARRAY, 1, &mut tex);
+
+gl::TexStorage3D(gl::TEXTURE_2D_ARRAY,
+                 1, // 有多少层多级渐远纹理
+                 gl::RGBA8,
+                 256, 256,
+                 100);  // 元素个数
+for i in 0..100 {
+  gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY,
+                    0, // 第 0 层渐远纹理
+                    0, 0,
+                    i,  // 第 i 个元素
+                    256, 256,
+                    1,  // 元素大小 256x256 像素
+                    gl::RGBA, gl::UNSIGNED_BYTE,
+                    img_data[i].as_ptr() as _);
+}
+```
+有意思的是，分配空间，填充数据用的函数是 `glTexStorage3D()` / `TexSubImage3D()`，参数 `depth` / `z` 用来表示元素的下标。
+
+在着色器里和 2D 数组纹理对应的采样器是 `sampler2DArray`，可以用 `texture()` 来读取数组元素：
+
+```glsl
+vec4 texture (sampler2DArray sampler, vec3 P)
+```
+`P` 的 xy 分量代表 2D 纹理的纹理坐标，z 分量表示数组纹理的下标：
+
+```glsl
+#version 460 core
+
+layout (location = 0) out vec4 color;
+
+in VS_OUT {
+  flat int alien;
+  vec2 tc;
+} fs_in;
+
+uniform sampler2DArray tex_aliens;
+
+void main(void) {
+  color = texture(tex_aliens, vec3(fs_in.tc, float(fs_in.alien)));
+}
+```
+
+这是书里示例 [alienrain](https://github.com/openglsuperbible/sb7code/blob/3f80b7a829442e2de9199a15e08ce7d09fd9260e/src/alienrain/alienrain.cpp#L106) 的片段着色器，传入片段着色器的变量里，`tc` 表示要读取的纹理坐标，`alien` 表示要读取的纹理下标。
+
+这个示例大概长这样：
+
 {% raw %}
 <div class="demo_app" id="_ch5_10_alienrain"></div>
 {% endraw %}
 
 ### 在着色器中向纹理写入数据
+
+OpenGL 里通过 image 变量来向纹理写入数据。sampler 变量代表整个纹理，而 image 变量代表纹理持有的图像数据。
+
+image 变量的类型与其对应的纹理：
+
+| 变量类型         | 对应纹理         |
+|:---------------|:----------------|
+| iamge1D        | 1D 纹理          |
+| iamge2D        | 2D 纹理          |
+| iamge3D        | 3D 纹理          |
+| iamgeCube      | 立方体贴图纹理     |
+| iamgeCubeArray | 立方体贴图数组纹理  |
+| iamgeRect      | 矩形纹理          |
+| iamge1DArray   | 1D 数组纹理       |
+| iamge2DArray   | 2D 数组纹理       |
+| iamgeBuffer    | 缓冲纹理          |
+| iamge2DMS      | 2D 多重采样纹理    |
+| iamge2DMSArray | 2D 多重采样数组纹理 |
+
+在着色器里声明 image 变量：
+
+```glsl
+uniform image2D my_image
+```
+
+在着色器里 载入 / 写入 image 变量：
+
+```glsl
+vec4 imageLoad(readonly image2D image, ivec2 P);
+void imageStore(image2D image, ivec2 P, vec4 data);
+```
+这里坐标纹理 `P` 是整数向量，说明其范围是在整个纹理数据里查找的。假设纹理的大小为 256x256，那么 P 的有效范围为 (0, 0) ~ (255, 255)。
+
+iimage 和 uimage 变量代表内部存储整型的纹理图像，对应的存取函数为：
+
+```glsl
+ivec4 imageLoad(readonly iimage2D image, ivec2 P);
+void imageStore(iimage2D image, ivec2 P, ivec4 data);
+uvec4 imageLoad(readonly uimage2D image, ivec2 P);
+void imageStore(uimage2D image, ivec2 P, uvec4 data);
+```
+用 `glBindImageTexture()` 将纹理对象绑到 **图像单元** 上，这样就可以指定 image 变量存取的纹理了：
+
+```c
+void glBindImageTexture(GLuint unit,
+                        GLuint texture,
+                        GLint level,
+                        GLboolean layered,
+                        GLint layer,
+                        GLenum access,
+                        GLenum format);
+```
+
+- `uint`：图像单元，大于等于 0 的整数，类似与纹理单元，和 image 变量相关
+- `texture`：要绑定的纹理对象
+- `level`：要绑定哪一层多级渐远纹理
+- `layered`：与数组纹理有关，如果设置为 `gl_FALSE`，将绑定整个数组，设置为 `GL_TRUE` 则绑定其中一个元素
+- `layer`：与数组纹理有关，指定要要绑定的数组元素。`layered` 为 `GL_FALSE` 时忽略
+- `access`：权限：`GL_READ_ONLY`、`GL_WRITE_ONLY`、`GL_READ_WRITE`
+- `format`：image 变量存取的数据格式，与 `glTextureStorage**()` 里设置的格式相关，常用的格式有 `GL_RGBA32F`、`GL_RGBA8`，完整的列表可以查阅 [docs.gl](https://docs.gl/gl4/glBindImageTexture)
+
+需要给 image 变量添加格式修饰符，和 `glBindImageTexture()` 的 `format` 对应：
+
+```glsl
+layout (binding = 0, rgba32ui) readonly uniform uimage2D image_in;
+```
+在 image 对象之间复制数据：
+
+```glsl
+#version 460 core
+
+// Uniform image variables:
+// Input image - note use of format qualifier because of loads
+layout (binding = 0, rgba32ui) readonly uniform uimage2D image_in;
+
+// Output image
+layout (binding = 1) uniform writeonly uimage2D image_out;
+
+void main(void) {
+  // Use fragment coordinate as image coordinate
+  ivec2 P = ivec2(gl_FragCoord.xy);
+  
+  // Read from input image
+  uvec4 data = imageLoad(image_in, P);
+  
+  // Write inverted data to output image
+  imageStore(image_out, P, ~data);
+}
+```
+
+在多个着色器调用同时读写 image 变量时，需要通过原子操作来保证结果的正确性。
+
+### 在 image 变量上的原子操作
+
+原子操作是指一段不可分割的读取——修改——写入序列。重点在于不可分割，多个对象对同一存储进行原子操作可以保证结果正确。image 变量上支持的原子操作：
+
+uint imageAtomicAdd (IMAGE_PARAMS,
+uint data)
+int imageAtomicAdd (IMAGE_PARAMS,
+int data)Computes a new value by adding the value of data
+to the contents of the selected texel.
+178
+Note: The qualification readonly writeonly accepts
+a variable qualified with readonly, writeonly, both,
+or neither. It means the formal argument will be
+used for neither reading nor writing to the underlying
+memory.8 Built-in Functions
+SyntaxDescription
+uint imageAtomicMin (IMAGE_PARAMS,
+uint data)
+int imageAtomicMin (IMAGE_PARAMS,
+int data)Computes a new value by taking the minimum of the
+value of data and the contents of the selected texel.
+uint imageAtomicMax (IMAGE_PARAMS,
+uint data)
+int imageAtomicMax (IMAGE_PARAMS,
+int data)Computes a new value by taking the maximum of the
+value data and the contents of the selected texel.
+uint imageAtomicAnd (IMAGE_PARAMS,
+uint data)
+int imageAtomicAnd (IMAGE_PARAMS,
+int data)Computes a new value by performing a bit-wise
+AND of the value of data and the contents of the
+selected texel.
+uint imageAtomicOr (IMAGE_PARAMS,
+uint data)
+int imageAtomicOr (IMAGE_PARAMS,
+int data)Computes a new value by performing a bit-wise OR
+of the value of data and the contents of the selected
+texel.
+uint imageAtomicXor (IMAGE_PARAMS,
+uint data)
+int imageAtomicXor (IMAGE_PARAMS,
+int data)Computes a new value by performing a bit-wise
+EXCLUSIVE OR of the value of data and the
+contents of the selected texel.
+uint imageAtomicExchange (IMAGE_PARAMS, Computes a new value by simply copying the value
+of data.
+uint data)
+int imageAtomicExchange (IMAGE_PARAMS,
+int data)
+uint imageAtomicCompSwap
+(IMAGE_PARAMS,
+uint compare,
+uint data)
+int imageAtomicCompSwap
+(IMAGE_PARAMS,
+int compare,
+int data)
+179
+Compares the value of compare and the contents of
+the selected texel. If the values are equal, the new
+value is given by data; otherwise, it is taken from the
+original value loaded from the texel.
+
+
+
 
 ### 同步存储图像
 
@@ -5879,6 +6207,6 @@ let vertex_position : &[f32]= &[
 ### 纹理视图
 
 {% raw %}
-<script type="module" src="/js/openglsb7th/ch5/index.js">
+<script type="module" src="/js/openglsb7th/ch5/index.js" defer>
 </script>
 {% endraw %}
