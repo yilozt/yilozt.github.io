@@ -6,9 +6,7 @@ date: 2022-01-23 13:35:55
 ---
 
 
-这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例，部分 demo 迁移到了 WebGL，笔记里部分示例其实是用 WebGL 实时渲染出来的。
-
-点击代码块上的眼睛按钮可以展开代码，点击复制按钮可以复制完整代码。
+这是自己阅读 OpenGL 超级宝典（第七版）的笔记，使用 Rust 学习书上的示例。点击代码块上的眼睛按钮 <i class="far fa-eye"></i> 可以展开代码，点击复制按钮 <i class="far fa-clone"></i> 可以复制完整代码。
 
 - 随书源码：https://github.com/openglsuperbible/sb7code
 - demo： https://github.com/yilozt/sb7coders
@@ -3454,7 +3452,7 @@ layout(std140) uniform TransformBlock {
   - OpenGL 应用程序都可以通过缓冲区映射读取区块内的数据。
 - 不同之处：
   - **着色器可以向着色器存储区块写入数据**
-  - 支持原子操作(读取-编辑-写入 --> 一个操作)
+  - 支持原子操作(读取-编辑-写入 --> 不可分割)
 
 __声明__
 
@@ -6096,7 +6094,7 @@ void glBindImageTexture(GLuint unit,
 ```
 
 - `uint`：图像单元，大于等于 0 的整数，类似与纹理单元，和 image 变量相关
-- `texture`：要绑定的纹理对象
+- `texture`：要绑定的纹理对象，用来存储 image 变量的数据
 - `level`：要绑定哪一层多级渐远纹理
 - `layered`：与数组纹理有关，如果设置为 `gl_FALSE`，将绑定整个数组，设置为 `GL_TRUE` 则绑定其中一个元素
 - `layer`：与数组纹理有关，指定要要绑定的数组元素。`layered` 为 `GL_FALSE` 时忽略
@@ -6138,75 +6136,170 @@ void main(void) {
 
 原子操作是指一段不可分割的读取——修改——写入序列。重点在于不可分割，多个对象对同一存储进行原子操作可以保证结果正确。image 变量上支持的原子操作：
 
-uint imageAtomicAdd (IMAGE_PARAMS,
-uint data)
-int imageAtomicAdd (IMAGE_PARAMS,
-int data)Computes a new value by adding the value of data
-to the contents of the selected texel.
-178
-Note: The qualification readonly writeonly accepts
-a variable qualified with readonly, writeonly, both,
-or neither. It means the formal argument will be
-used for neither reading nor writing to the underlying
-memory.8 Built-in Functions
-SyntaxDescription
-uint imageAtomicMin (IMAGE_PARAMS,
-uint data)
-int imageAtomicMin (IMAGE_PARAMS,
-int data)Computes a new value by taking the minimum of the
-value of data and the contents of the selected texel.
-uint imageAtomicMax (IMAGE_PARAMS,
-uint data)
-int imageAtomicMax (IMAGE_PARAMS,
-int data)Computes a new value by taking the maximum of the
-value data and the contents of the selected texel.
-uint imageAtomicAnd (IMAGE_PARAMS,
-uint data)
-int imageAtomicAnd (IMAGE_PARAMS,
-int data)Computes a new value by performing a bit-wise
-AND of the value of data and the contents of the
-selected texel.
-uint imageAtomicOr (IMAGE_PARAMS,
-uint data)
-int imageAtomicOr (IMAGE_PARAMS,
-int data)Computes a new value by performing a bit-wise OR
-of the value of data and the contents of the selected
-texel.
-uint imageAtomicXor (IMAGE_PARAMS,
-uint data)
-int imageAtomicXor (IMAGE_PARAMS,
-int data)Computes a new value by performing a bit-wise
-EXCLUSIVE OR of the value of data and the
-contents of the selected texel.
-uint imageAtomicExchange (IMAGE_PARAMS, Computes a new value by simply copying the value
-of data.
-uint data)
-int imageAtomicExchange (IMAGE_PARAMS,
-int data)
-uint imageAtomicCompSwap
-(IMAGE_PARAMS,
-uint compare,
-uint data)
-int imageAtomicCompSwap
-(IMAGE_PARAMS,
-int compare,
-int data)
-179
-Compares the value of compare and the contents of
-the selected texel. If the values are equal, the new
-value is given by data; otherwise, it is taken from the
-original value loaded from the texel.
+| 函数                                                                        | 说明                                                                           |
+|:---------------------------------------------------------------------------|:-------------------------------------------------------------------------------|
+| uint imageAtomicAdd (image2D image, ivec2 P, uint data)                    | 在 P 处读取数据，与 data 相加，结果写入 image，返回原来读到的值                         |
+| uint imageAtomicMin (image2D image, ivec2 P, uint data)                    | 在 P 处读取数据，与 data 求最小值，结果写入 image，返回原来读到的值                      |
+| uint imageAtomicMax (image2D image, ivec2 P, uint data)                    | 在 P 处读取数据，与 data 求最大值，结果写入 image，返回原来读到的值                      |
+| uint imageAtomicAnd (image2D image, ivec2 P, uint data)                    | 在 P 处读取数据，与 data 求逻辑与，结果写入 image，返回原来读到的值                      |
+| uint imageAtomicOr (image2D image, ivec2 P, uint data)                     | 在 P 处读取数据，与 data 求逻辑或，结果写入 image，返回原来读到的值                      |
+| uint imageAtomicXor (image2D image, ivec2 P, uint data)                    | 在 P 处读取数据，与 data 进行异或，结果写入 image，返回原来读到的值                      |
+| uint imageAtomicExchange (image2D image, ivec2 P, uint data)               | 在 P 处读取数据，将 data 写入 image，返回原来读到的值                                 |
+| uint imageAtomicCompSwap (image2D image, ivec2 P, uint compare, uint data) | 将在 P 处读取的数据和 compare 比较，如果相等，将 data 写入 image，image，返回原来读到的值 |
+
+可以通过 image 变量的原子操作，在着色器内实现一些数据结构，如单向链表。虽然着色器内没有指针类型，但可以通过数组实现链表。数组表示的链表结构如下：
+
+<img src="linklist.png" style="scale: 80%">
+
+key 代表存储的元素，next 代表下一个元素的位置，header为头指针，指向第一个元素。上面链表存储的元素：[7, 2, 8, 4]
+
+着色器内链表的实现需要三块内存：
+1. 第一块用来存储链表元素，可以用着色器存储区块存储
+2. 第二块用来存储元素个数，可以用原子计数器存储
+3. 第三块用来存储头指针，可以用 image 变量存储，同时存储大量链表
+
+添加元素的过程（头插法）：
+
+1. 用 `atomicCounterIncrement()` 将元素个数加1，返回要插入的下标
+2. 用 `imageAtomicExchange()` 更新头指针，返回前一个元素的下标
+3. 填充数据，将新元素的 next 设置为前一个元素的下标
+
+```glsl
+#version 460 core
+
+// Atomic counter for filled size
+layout (binding = 0, offset = 0) uniform atomic_uint fill_counter;
+
+// 2D image to store header pointer
+layout (binding = 0) uniform uimage2D head_pointer;
+
+// element struct
+struct list_item {
+  vec4 color;
+  float depth;
+  int facing;
+  uint next;
+};
+
+// array to storage elements
+layout (binding = 0, std430) buffer list_item_block {
+  list_item item[];
+};
+
+// Input from vertex shader
+in VS_OUT {
+  vec4 in;
+} fs_in;
+
+void main(void) {
+  ivec2 P = ivec2(gl_FragCoord.xy);
+
+  // index of new element
+  uint index = atomicCounterIncrement(fill_counter);
+
+  // get index of prev element
+  // update header pointer
+  uint old_index = imageAtomicExchange(head_pointer, P, index);
+
+  // fill data
+  item[index].color = fs_in.color;
+  item[index].depth = gl_FragCoord.z;
+  item[index].facing = gl_FrontFacing ? 1 : 0;
+
+  // set next pointer
+  item[index].next = old_index;
+}
+```
+`gl_FrontFacing` 是着色器的内置变量，判断图形是否处于正面
+
+在初始化时，原子计数器内的值为 0，head_pointer 内的数据可以设置为 uint 的最大值 0xFFFFFFFF，表示 nil。插入第一个元素，index = 0，old_index = nil，item[0].next = nil
+
+遍历链表，只需要查询 next 是不是 nil 就行：
+
+```glsl
+#version 460 core
+
+// Atomic counter for filled size
+layout (binding = 0, offset = 0) uniform atomic_uint fill_counter;
+
+// 2D image to store header pointer
+layout (binding = 0) uniform uimage2D head_pointer;
+
+// element struct
+struct list_item {
+  vec4 color;
+  float depth;
+  int facing;
+  uint next;
+};
+
+// array to storage elements
+layout (binding = 0, std430) buffer list_item_block {
+  list_item item[];
+};
+
+layout (location = 0) out vec4 color;
+
+const uint max_fragments = 10;
+
+void main(void) {
+  uint frag_count = 0;
+  float depth_accum = 0.0;
+
+  ivec2 P = ivec2(gl_FragCoord.xy);
+
+  uint index = imageLoad(head_pointer, P);
+
+  while (frag_count < max_fragments && index != 0xFFFFFFFFFF) {
+    list_item this_item = item[index];
+
+    if (this_item.facing != 0) {
+      depth_accum -= this_item.depth;
+    } else {
+      depth_accum += this_item.depth;
+    }
+
+    index = this_item.next;
+    frag_count++;
+  }
+
+  depth_accum *= 3000.0;
+
+  color = vec3(depth_accum, 1.0);
+}
+```
+
+运行截图（[源码](https://github.com/openglsuperbible/sb7code/blob/master/src/fragmentlist/fragmentlist.cpp)）：
+
+![fragmentlists](fragmentlist.png)
+
+### 同步存取图像
+
+```rust
+// c
+// glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
+gl::MemoryBarrier(gl::SHADER_IMAGE_ACCESS_BARRIER_BIT);
+```
+对应的着色器函数：
+
+```glsl
+memoryBarrierImage()
+```
+
+用来保证屏障前所有对 image 对象的读写的着色器都完成后，才执行之后使用 image 对象的着色器。
 
 
+<!--
 
-
-### 同步存储图像
+摸了，以后需要用到的时候再嗦
 
 ### 纹理压缩
 
 ### 纹理视图
 
+-->
+
 {% raw %}
-<script type="module" src="/js/openglsb7th/ch5/index.js" defer>
+<script type="module" src="/js/openglsb7th/ch5/index.js" async>
 </script>
 {% endraw %}
