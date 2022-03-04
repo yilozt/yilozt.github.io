@@ -41,7 +41,7 @@ render_drafts: false
 post_asset_folder: true
 marked:
   prependRoot: true
-  postAsset: false
+  postAsset: true
 relative_link: true
 future: true
 highlight:
@@ -134,6 +134,7 @@ theme_config:
 
   # Disable cdn
   cdn:
+    enable: false
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
