@@ -179,7 +179,7 @@ gl::BufferStorage(gl::ARRAY_BUFFER, buf, size as _, null(),
 | GL_MAP_COHERENT_BIT              | 缓冲区映射图是连贯的                                   |
 | GL_CLIENT_STORAGE_BIT            | 优先将缓冲区的存储空间分配到应用内存上，而不是在显存上分配    |
 
-OpenGL 在执行绘制命令（`glDraw...()`）时会结果缓冲区映射，设置 `GL_MAP_PERSISTENT_BIT` 则可以一直保持映射状态，会牺牲一定性能。
+OpenGL 在执行绘制命令（`glDraw...()`）时会结束缓冲区映射，设置 `GL_MAP_PERSISTENT_BIT` 则可以一直保持映射状态，会牺牲一定性能。
 
 GL_MAP_CORCORMENT_BIT 表示缓存区在 CPU 和 GPU 之间映射是密切相关的，保证了在 CPU 或 GPU 对缓冲区的写入效果最终会对另一方可见，而不需要应用程序进一步干预。如果不设置这个标志位，只有在结束缓冲区映射或者调用 `glFlushMappedBufferRange() / glMemoryBarrier()` 来应用更改。
 
