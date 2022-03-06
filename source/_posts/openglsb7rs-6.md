@@ -414,9 +414,118 @@ if (shader) {
 }
 ```
 
-#### 接口匹配
+### 接口匹配
+
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct App {
+#     info: String,
+# }
+# 
+# impl Application for App {
+#     fn startup(&mut self) {
+#         unsafe {
+#             let src = std::ffi::CString::new(
+#                 "#version 460 core
+# 
+#                  out vec4 color;
+#                  layout (location = 2) out ivec2 data;
+#                  out float extra;
+# 
+#                  void main() {
+#                      color = vec4(1.0);
+#                      data = ivec2(1, 2);
+#                      extra = 1.0;
+#                  }",
+#             )
+#             .unwrap();
+# 
+#             let prog = gl::CreateShaderProgramv(
+#                 gl::FRAGMENT_SHADER, 1,
+#                 &src.as_ptr()
+#             );
+# 
+let mut counts = 0;
+gl::GetProgramInterfaceiv(
+    prog,
+    gl::PROGRAM_OUTPUT,
+    gl::ACTIVE_RESOURCES,
+    &mut counts
+);
+# 
+# let name_of = |name| match name as u32 {
+#     gl::FLOAT_VEC4 => "vec4",
+#     gl::INT_VEC2 => "ivec2",
+#     gl::FLOAT => "float",
+#     _ => "unknown",
+# };
+
+for index in 0..counts {
+    let mut params = [0; 2];
+    let mut name = [0u8; 64];
+    gl::GetProgramResourceiv(
+        prog,
+        gl::PROGRAM_OUTPUT,
+        index as _,
+        2,
+        [gl::TYPE, gl::LOCATION].as_ptr(),
+        2,
+        std::ptr::null_mut(),
+        params.as_mut_ptr(),
+    );
+    gl::GetProgramResourceName(
+        prog,
+        gl::PROGRAM_OUTPUT,
+        index as _,
+        64,
+        std::ptr::null_mut(),
+        name.as_mut_ptr() as _,
+    );
+
+    self.info.push_str(&format!(
+        "Index {}: {} {} @ location {}\n",
+        index,
+        std::str::from_utf8(&name)
+            .unwrap_or("unknown")
+            .trim_matches('\u{0}'),
+        name_of(params[0]),
+        params[1]
+    ));
+}
+# 
+#             gl::DeleteProgram(prog);
+# 
+#             println!("{}", self.info);
+#         }
+#     }
+# 
+#     fn ui(&mut self, ui: &imgui_glfw_rs::imgui::Ui) {
+#         use imgui_glfw_rs::imgui;
+#         let win = imgui::Window::new("OpenGL - Information")
+#             .resizable(false)
+#             .no_decoration()
+#             .position([10., 10.], imgui::Condition::Always);
+#         if let Some(end) = win.begin(ui) {
+#             ui.text(format!("{}", self.info));
+#             end.end();
+#         }
+#     }
+# }
+# 
+# fn main() {
+#     App::default().run();
+# }
+```
+
+```
+Index 0: color vec4 @ location 0
+Index 1: data ivec2 @ location 2
+Index 2: extra float @ location 1
+```
 
 
 ## 4. 着色器子程序
 
-## 5. 二进制着色器程序
+## 5. 着色器程序二进制
