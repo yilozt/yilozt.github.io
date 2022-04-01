@@ -525,7 +525,136 @@ Index 1: data ivec2 @ location 2
 Index 2: extra float @ location 1
 ```
 
-
 ## 4. 着色器子程序
 
+```rust
+# use sb7::application::*;
+# 
+# #[derive(Default)]
+# struct Uniforms {
+#     subroutine1: i32,
+# }
+# 
+# #[derive(Default)]
+# struct App {
+#     render_program: u32,
+#     vao: u32,
+#     subroutines: [u32; 2],
+#     uniforms: Uniforms,
+# }
+# 
+# impl App {
+#     fn load_shaders(&mut self) {
+#         if self.render_program != 0 {
+#             unsafe { gl::DeleteProgram(self.render_program) };
+#         }
+# 
+#         self.render_program = sb7::program::link_from_shaders(
+#             &[
+#                 sb7::shader::load(
+#                     "media/shaders/subroutines/subroutines.vs.glsl",
+#                     gl::VERTEX_SHADER,
+#                     true,
+#                 ),
+#                 sb7::shader::load(
+#                     "media/shaders/subroutines/subroutines.fs.glsl",
+#                     gl::FRAGMENT_SHADER,
+#                     true,
+#                 ),
+#             ],
+#             true,
+#         );
+# 
+#         unsafe {
+// get counts of subroutine
+let mut counts = 0;
+gl::GetProgramStageiv(
+    self.render_program,
+    gl::FRAGMENT_SHADER,
+    gl::ACTIVE_SUBROUTINES,
+    &mut counts,
+);
+
+let mut name = [0u8; 256];
+for i in 0..counts {
+    gl::GetProgramResourceName(
+        self.render_program,
+        gl::FRAGMENT_SUBROUTINE,
+        i as _,
+        256,
+        std::ptr::null_mut(),
+        name.as_mut_ptr() as _,
+    );
+
+    let name = std::ffi::CString::new(
+        std::str::from_utf8(&name).unwrap().trim_matches('\u{0}'),
+    )
+    .unwrap();
+
+    self.subroutines[i as usize] = gl::GetSubroutineIndex(
+        self.render_program,
+        gl::FRAGMENT_SHADER,
+        name.as_ptr()
+    );
+}
+
+let name = std::ffi::CString::new("mySubroutineUniform").unwrap();
+self.uniforms.subroutine1 = gl::GetSubroutineUniformLocation(
+    self.render_program,
+    gl::FRAGMENT_SHADER,
+    name.as_ptr(),
+);
+#         }
+#     }
+# }
+# 
+# impl Application for App {
+#     fn init(&self) -> AppConfig {
+#         AppConfig {
+#             title: "OpenGL SuperBible - Shader Subroutines".into(),
+#             ..Default::default()
+#         }
+#     }
+# 
+#     fn startup(&mut self) {
+#         self.load_shaders();
+# 
+#         unsafe {
+#             gl::GenVertexArrays(1, &mut self.vao);
+#             gl::BindVertexArray(self.vao);
+#         }
+#     }
+# 
+#     fn render(&self, current_time: f64) {
+#         let i = current_time as usize;
+#         unsafe {
+#             gl::UseProgram(self.render_program);
+# 
+#             gl::UniformSubroutinesuiv(
+#                 gl::FRAGMENT_SHADER,
+#                 1,
+#                 &self.subroutines[i & 1]
+#             );
+# 
+#             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+#         }
+#     }
+# 
+#     fn on_key(&mut self, key: imgui_glfw_rs::glfw::Key,
+#               press: imgui_glfw_rs::glfw::Action) {
+#         if let imgui_glfw_rs::glfw::Action::Press = press {
+#             match key {
+#                 imgui_glfw_rs::glfw::Key::R => self.load_shaders(),
+#                 _ => {}
+#             }
+#         }
+#     }
+# }
+# 
+# fn main() {
+#     App::default().run();
+# }
+```
+
 ## 5. 着色器程序二进制
+
