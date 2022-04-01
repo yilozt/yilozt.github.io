@@ -99,6 +99,8 @@
     <span id="actions">
       <ul>
         
+        <li><a class="icon" aria-label="上一篇" href="../../../03/04/openglsb7rs-6/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
         
         <li><a class="icon" aria-label="下一篇" href="../../21/Rust-code-hide-Test/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
         
@@ -266,7 +268,7 @@
 <td align="left">优先将缓冲区的存储空间分配到应用内存上，而不是在显存上分配</td>
 </tr>
 </tbody></table>
-<p>OpenGL 在执行绘制命令（<code>glDraw...()</code>）时会结果缓冲区映射，设置 <code>GL_MAP_PERSISTENT_BIT</code> 则可以一直保持映射状态，会牺牲一定性能。</p>
+<p>OpenGL 在执行绘制命令（<code>glDraw...()</code>）时会结束缓冲区映射，设置 <code>GL_MAP_PERSISTENT_BIT</code> 则可以一直保持映射状态，会牺牲一定性能。</p>
 <p>GL_MAP_CORCORMENT_BIT 表示缓存区在 CPU 和 GPU 之间映射是密切相关的，保证了在 CPU 或 GPU 对缓冲区的写入效果最终会对另一方可见，而不需要应用程序进一步干预。如果不设置这个标志位，只有在结束缓冲区映射或者调用 <code>glFlushMappedBufferRange() / glMemoryBarrier()</code> 来应用更改。</p>
 <h3 id="更新缓冲区的内容"><a href="#更新缓冲区的内容" class="headerlink" title="更新缓冲区的内容"></a>更新缓冲区的内容</h3><p><code>gl[Named]BufferSubData()</code> 用来将数据写入缓冲区（内存 -&gt; 显存）<br>需要将 <code>GL_DYNAMIC_STORAGE_BIT</code> 写入 <code>gl[Named]BufferStorage()</code> 的 flag 参数里：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">glBufferSubData</span><span class="params">(GLenum target,</span></span><br><span class="line"><span class="params">                     GLintptr offset,</span></span><br><span class="line"><span class="params">                     GLsizeiptr size,</span></span><br><span class="line"><span class="params">                     <span class="type">const</span> GLvoid * data)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">glNamedBufferSubData</span><span class="params">(GLuint buffer,</span></span><br><span class="line"><span class="params">                          GLintptr offset,</span></span><br><span class="line"><span class="params">                          GLsizei size,</span></span><br><span class="line"><span class="params">                          <span class="type">const</span> <span class="type">void</span> *data)</span>;</span><br></pre></td></tr></table></figure>
