@@ -12,9 +12,9 @@ tags:
 
 $$
 \begin{eqnarray}
-CPU_{time} & = & 一段程序执行花费的 CPU 时间 \\
-           & = & 总时钟周期 \times 每一周期花费的时间（周期长度）\\
-           & = & 总时钟周期 \div 时钟频率 \\
+CPU_{time} & = & 一段程序执行花费的 CPU 时间 \\\\
+           & = & 总时钟周期 \times 每一周期花费的时间（周期长度）\\\\
+           & = & 总时钟周期 \div 时钟频率 \\\\
 \end{eqnarray}
 $$
 
@@ -25,7 +25,7 @@ $$
 因此
 $$
 \begin{eqnarray}
-CPU_{time} & = & CPI \times IC \times 周期长度 \\
+CPU_{time} & = & CPI \times IC \times 周期长度 \\\\
            & = & CPI \times IC \div 时钟频率
 \end{eqnarray}
 $$
