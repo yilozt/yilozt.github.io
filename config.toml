@@ -1,0 +1,48 @@
+theme = 'hugo-theme-console'
+
+defaultContentLanguage = 'en'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[params]
+
+  # Set the animation style -- https://animate.style/
+  # To disable animations, please remove or comment animationStyle parameter
+  animateStyle = "animate__animated animate__fadeIn animate__fast" 
+
+[[params.navlinks]]
+name = "posts/"
+url = "posts/"
+
+[[params.navlinks]]
+name = "about/"
+url = "about/"
+
+[[languages.zh-cn.params.navlinks]]
+name = "文章/"
+url = "posts/"
+
+[[languages.zh-cn.params.navlinks]]
+name = "关于我/"
+url = "about/"
+
+[languages]
+  [languages.en]
+    title = "Yi's Notepad"
+    weight = 1
+  [languages.zh-cn]
+    title = 'Yi 的记事本'
+    weight = 2
+
+[[languages.zh-cn.menu.main]]
+      name = 'ENG/'
+      url = '/'
+      weight = 1
+
+[[languages.en.menu.main]]
+      name = 'zh/'
+      url = '/zh-cn'
+      weight = 2

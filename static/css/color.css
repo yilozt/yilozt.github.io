@@ -1,0 +1,44 @@
+:root {
+    --primary-color: #36ae74;
+}
+
+.footer {
+    border-top: dashed 2px;
+    margin-bottom: 40px;
+    color: var(--secondary-color);
+}
+
+.highlight > pre {
+    background-color: transparent !important;
+}
+
+pre code::after, pre code::before {
+    content: "~~~";
+    display: block;
+}
+
+pre > code {
+    overflow-x: auto;
+    padding: 0px !important;
+}
+
+div > pre {
+    margin: 0;
+    border-style: none;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin-bottom: 0;
+}
+
+body > * {
+    width: 100%;
+}
+
+body > .main-container {
+    flex: 1;
+}
+
