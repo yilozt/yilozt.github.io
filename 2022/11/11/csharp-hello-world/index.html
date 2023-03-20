@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="自己在 NixOS 上学习 C# 的一些笔记。  安装 Mono 和 .Net SDK C# 在 .Net 之上运行，安装 .Net SDK： 1nix-shell -p dotnetCorePackages.sdk_6_0 mono  Hello World C# 的程序结构一般长这样，以 cs 作为拓展名： 12345678910&#x2F;&#x2F; hello_world.csusing System;na">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C# Hello World (NixOS)">
+<meta property="og:url" content="https://yilozt.github.io/2022/11/11/csharp-hello-world/index.html">
+<meta property="og:site_name" content="笔记本">
+<meta property="og:description" content="自己在 NixOS 上学习 C# 的一些笔记。  安装 Mono 和 .Net SDK C# 在 .Net 之上运行，安装 .Net SDK： 1nix-shell -p dotnetCorePackages.sdk_6_0 mono  Hello World C# 的程序结构一般长这样，以 cs 作为拓展名： 12345678910&#x2F;&#x2F; hello_world.csusing System;na">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://yilozt.github.io/2022/11/11/csharp-hello-world/debug-in-vscode.png">
+<meta property="article:published_time" content="2022-11-11T01:28:43.000Z">
+<meta property="article:author" content="yilozt">
+<meta property="article:tag" content="C#">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://yilozt.github.io/2022/11/11/csharp-hello-world/debug-in-vscode.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="../../../../images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="../../../../images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="../../../../images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>C# Hello World (NixOS)</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="atom.xml" title="笔记本" type="application/atom+xml">
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="../../../../index.html">首页</a></li><!--
+     --><!--
+       --><li><a href="../../../../archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="../../../../tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="../../../../categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="../../../../booklist/">书单</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="../../../../2023/01/15/Win32-API-%E5%A4%9A%E4%BB%BB%E5%8A%A1%E5%A4%9A%E7%BA%BF%E7%A8%8B/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="../../../10/31/SQL-init/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://yilozt.github.io/2022/11/11/csharp-hello-world/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&text=C# Hello World (NixOS)"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&is_video=false&description=C# Hello World (NixOS)"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=C# Hello World (NixOS)&body=Check out this article: https://yilozt.github.io/2022/11/11/csharp-hello-world/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&name=C# Hello World (NixOS)&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://yilozt.github.io/2022/11/11/csharp-hello-world/&t=C# Hello World (NixOS)"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-mono-%E5%92%8C-net-sdk"><span class="toc-number">1.</span> <span class="toc-text"> 安装 Mono 和 .Net SDK</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#hello-world"><span class="toc-number">2.</span> <span class="toc-text"> Hello World</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%89%A7%E8%A1%8C"><span class="toc-number">3.</span> <span class="toc-text"> 编译执行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vscode-%E6%8F%92%E4%BB%B6"><span class="toc-number">4.</span> <span class="toc-text"> Vscode 插件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#debug"><span class="toc-number">5.</span> <span class="toc-text"> Debug</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        C# Hello World (NixOS)
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">yilozt</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-11-11T01:28:43.000Z" itemprop="datePublished">2022-11-11</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="../../../../tags/C/" rel="tag">C#</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>自己在 NixOS 上学习 C# 的一些笔记。</p>
+<h2 id="安装-mono-和-net-sdk"><a class="markdownIt-Anchor" href="#安装-mono-和-net-sdk"></a> 安装 Mono 和 .Net SDK</h2>
+<p>C# 在 .Net 之上运行，安装 .Net SDK：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nix-shell -p dotnetCorePackages.sdk_6_0 mono</span><br></pre></td></tr></table></figure>
+<h2 id="hello-world"><a class="markdownIt-Anchor" href="#hello-world"></a> Hello World</h2>
+<p>C# 的程序结构一般长这样，以 cs 作为拓展名：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// hello_world.cs</span></span><br><span class="line"><span class="keyword">using</span> System;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">com.example</span> &#123;</span><br><span class="line">    <span class="keyword">class</span> <span class="title">HelloWorld</span> &#123;</span><br><span class="line">        <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span>(<span class="params"><span class="built_in">string</span>[] args</span>)</span> &#123;</span><br><span class="line">            Console.WriteLine(<span class="string">&quot;Hello World&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>C# 的语法结构和 Java、C++ 类似：</p>
+<ul>
+<li>using 可以用来导入命名空间</li>
+<li>程序的入口是 Main 函数，这里的语法和 Java 类似</li>
+<li>Console.WriteLine 方法类似于 C 里的 printf，这个方法从 System 命名空间里引入</li>
+</ul>
+<h2 id="编译执行"><a class="markdownIt-Anchor" href="#编译执行"></a> 编译执行</h2>
+<p>安装 mono 使用 csc 编译程序：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">csc hello_world.cs</span><br></pre></td></tr></table></figure>
+<p>编译通过后会在当前目录生成 hello_world.exe：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ file hello_world.exe </span><br><span class="line">hello_world.exe: PE32 executable (console) Intel 80386 Mono/.Net assembly, for MS Windows</span><br></pre></td></tr></table></figure>
+<p>运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mono hello_world.exe</span><br><span class="line">Hello World</span><br></pre></td></tr></table></figure>
+<h2 id="vscode-插件"><a class="markdownIt-Anchor" href="#vscode-插件"></a> Vscode 插件</h2>
+<p>主要安装两个插件：</p>
+<ul>
+<li>C#</li>
+<li>Mono Debug</li>
+</ul>
+<p>C# 插件其实有调试功能，但这个功能只能在 Windows 里使用，在 Linux 下需要安装 Mono Debug 来进行调试。</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">environment.<span class="attr">systemPackages</span> = <span class="keyword">with</span> pkgs; [</span><br><span class="line">  (vscode-<span class="keyword">with</span>-extensions.override &#123;</span><br><span class="line">    <span class="attr">vscode</span> = vscodium;</span><br><span class="line">    <span class="attr">vscodeExtensions</span> = <span class="keyword">with</span> vscode-extensions; [</span><br><span class="line">      vscode-extensions.ms-dotnettools.csharp</span><br><span class="line">    ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="attr">name</span> = <span class="string">&quot;mono-debug&quot;</span>;</span><br><span class="line">        <span class="attr">publisher</span> = <span class="string">&quot;ms-vscode&quot;</span>;</span><br><span class="line">        <span class="attr">version</span> = <span class="string">&quot;0.16.3&quot;</span>;</span><br><span class="line">        <span class="attr">sha256</span> = <span class="string">&quot;sha256-6IU8aP4FQVbEMZAgssGiyqM+PAbwipxou5Wk3Q2mjZg=&quot;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    ];</span><br><span class="line">  &#125;)</span><br><span class="line">];</span><br></pre></td></tr></table></figure>
+<h2 id="debug"><a class="markdownIt-Anchor" href="#debug"></a> Debug</h2>
+<p>主要参考了 CSDN 上的文章：<a target="_blank" rel="noopener" href="https://blog.csdn.net/qinyuanpei/article/details/57419539">https://blog.csdn.net/qinyuanpei/article/details/57419539</a></p>
+<p>tasks.json：以 -debug 模式编译 c# 源文件</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// See https://go.microsoft.com/fwlink/?LinkId=733558</span></span><br><span class="line">    <span class="comment">// for the documentation about the tasks.json format</span></span><br><span class="line">    <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2.0.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tasks&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;label&quot;</span><span class="punctuation">:</span> <span class="string">&quot;build&quot;</span><span class="punctuation">,</span> <span class="comment">// 用来标识任务</span></span><br><span class="line">            <span class="attr">&quot;command&quot;</span><span class="punctuation">:</span> <span class="string">&quot;csc&quot;</span><span class="punctuation">,</span> <span class="comment">// 运行 csc -debug $&#123;file&#125; 编译文件</span></span><br><span class="line">            <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;shell&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;args&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">                <span class="string">&quot;-debug&quot;</span><span class="punctuation">,</span></span><br><span class="line">                <span class="string">&quot;$&#123;file&#125;&quot;</span>     <span class="comment">// $&#123;file&#125; 将被替换成源文件的路径</span></span><br><span class="line">            <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>launch.json：通过 mono debug 插件进行调试</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="string">&quot;0.2.0&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;configurations&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span></span><br><span class="line">            <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mono&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Launch&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;request&quot;</span><span class="punctuation">:</span> <span class="string">&quot;launch&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;program&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;fileDirname&#125;/$&#123;fileBasenameNoExtension&#125;.exe&quot;</span><span class="punctuation">,</span> </span><br><span class="line">            <span class="attr">&quot;cwd&quot;</span><span class="punctuation">:</span> <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;preLaunchTask&quot;</span><span class="punctuation">:</span> <span class="string">&quot;build&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;runtimeExecutable&quot;</span><span class="punctuation">:</span> <span class="string">&quot;mono&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="attr">&quot;console&quot;</span><span class="punctuation">:</span> <span class="string">&quot;integratedTerminal&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>如果 vscode 报错提示找不到 mono runtime，可以将 runtimeExecutable 设置成 mono 的绝对路径</p>
+<p>就可以在源文件里设置断点，F5 调试了：</p>
+<p><img src="./debug-in-vscode.png" alt="" /></p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="../../../../index.html">首页</a></li>
+         
+          <li><a href="../../../../archives/">归档</a></li>
+         
+          <li><a href="../../../../tags/">标签</a></li>
+         
+          <li><a href="../../../../categories/">分类</a></li>
+         
+          <li><a href="../../../../booklist/">书单</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-mono-%E5%92%8C-net-sdk"><span class="toc-number">1.</span> <span class="toc-text"> 安装 Mono 和 .Net SDK</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#hello-world"><span class="toc-number">2.</span> <span class="toc-text"> Hello World</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%89%A7%E8%A1%8C"><span class="toc-number">3.</span> <span class="toc-text"> 编译执行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vscode-%E6%8F%92%E4%BB%B6"><span class="toc-number">4.</span> <span class="toc-text"> Vscode 插件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#debug"><span class="toc-number">5.</span> <span class="toc-text"> Debug</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://yilozt.github.io/2022/11/11/csharp-hello-world/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&text=C# Hello World (NixOS)"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&is_video=false&description=C# Hello World (NixOS)"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=C# Hello World (NixOS)&body=Check out this article: https://yilozt.github.io/2022/11/11/csharp-hello-world/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&title=C# Hello World (NixOS)"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://yilozt.github.io/2022/11/11/csharp-hello-world/&name=C# Hello World (NixOS)&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://yilozt.github.io/2022/11/11/csharp-hello-world/&t=C# Hello World (NixOS)"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2023
+    yilozt
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="../../../../index.html">首页</a></li><!--
+     --><!--
+       --><li><a href="../../../../archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="../../../../tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="../../../../categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="../../../../booklist/">书单</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+ 
+  <link
+    rel="preload"
+    href="../../../../lib/font-awesome/css/all.min.css"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  />
+  <noscript
+    ><link
+      rel="stylesheet"
+      href="../../../../lib/font-awesome/css/all.min.css"
+  /></noscript>
+
+
+    <!-- jquery -->
+ 
+  
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+
+
+
+<!-- scrollreveal -->
+ 
+  
+<script src="/lib/scrollreveal/scrollreveal.min.js"></script>
+
+
+
+<!-- clipboard -->
+
+   
+    
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from($(trigger.nextElementSibling.querySelectorAll('.code')).find('.line')).reduce((st, i) => st + i.innerText + '\n', '')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<!-- hiding some code -->
+
+  <script type="text/javascript">
+  $(function() {
+    'use strict';
+    const langs = ['rust', 'glsl'].map(l => '.highlight.' + l + ' .btn-copy').join(',');
+
+    const lines_to_hide = {};
+
+    // hiding-code HTML
+    const eye_btn = "<span class=\"btn-eye tooltipped tooltipped-sw\" aria-label=\"expand\">"
+                + '  <i class="far fa-eye"></i>';
+                + '</span>';
+    // mount the btn
+    $(langs).before(eye_btn);
+
+    // build the lines to hide
+    const eyes = $('.btn-eye');
+    const tables = $('.btn-eye~table');
+
+    const match_codes = [];
+    const match_gutters = [];
+    const arrs = [match_codes, match_gutters];
+
+    const wrap_arrs = (spans) => {
+      // wraps lines in array into a span element
+      arrs.forEach(arr => {
+        if (arr.length > 0) {
+          $(arr).wrapAll("<span class='boring'></span>");
+          spans.push($(arr[0]).parent());
+          arr.length = 0;
+        }
+      });
+    };
+
+    for (let i = 0; i < eyes.length; i++) {
+      const id = "eye-" + i;
+      eyes[i].id = id;
+      const spans = [];
+      const gutters = tables[i].querySelectorAll(".gutter .line");
+      const codes = tables[i].querySelectorAll(".code .line");
+
+      for (let j = 0; j < codes.length; j++) {
+        if (codes[j].firstChild && codes[j].firstChild.textContent.startsWith("# ")) {
+          // push lines to hide into array
+          codes[j].firstChild.textContent = codes[j].firstChild.textContent.replace("# ", "");
+          match_codes.push(codes[j]);
+          match_codes.push(codes[j].nextElementSibling);
+          if (gutters[j] !== undefined) {
+            match_gutters.push(gutters[j]);
+            match_gutters.push(gutters[j].nextElementSibling);
+          }
+        } else {
+          wrap_arrs(spans);
+        }
+      }
+      wrap_arrs(spans);
+
+      if (spans.length === 0) {
+        $("#" + id).remove();
+      } else {
+        // add index
+        lines_to_hide[id] = spans;
+        spans.forEach(t => t.hide());
+      }
+    }
+    $('.code').addClass('show');
+
+    // handle click event
+    for ( let id in lines_to_hide) {
+      const btn = $("#" + id);
+      const icon = btn.find("i");
+      btn.on("click", (e) => {
+        if (icon.hasClass("fa-eye-slash")) {
+          // hide lines
+          lines_to_hide[id].forEach(t => t.fadeOut());
+          btn.attr("aria-label", "expand");
+          icon.removeClass("fa-eye-slash");
+        } else {
+          // show lines
+          lines_to_hide[id].forEach(t => t.fadeIn());
+          btn.attr("aria-label", "fold");
+          icon.addClass("fa-eye-slash");
+        }
+      })
+    }
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

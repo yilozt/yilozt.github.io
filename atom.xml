@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>笔记本</title>
+  
+  
+  <link href="https://yilozt.github.io/atom.xml" rel="self"/>
+  
+  <link href="https://yilozt.github.io/"/>
+  <updated>2023-02-07T16:27:03.000Z</updated>
+  <id>https://yilozt.github.io/</id>
+  
+  <author>
+    <name>yilozt</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>interupt in x86</title>
+    <link href="https://yilozt.github.io/2023/02/08/interupt-in-x86/"/>
+    <id>https://yilozt.github.io/2023/02/08/interupt-in-x86/</id>
+    <published>2023-02-07T16:27:03.000Z</published>
+    <updated>2023-02-07T16:27:03.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="assembly" scheme="https://yilozt.github.io/tags/assembly/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>数电</title>
+    <link href="https://yilozt.github.io/2023/01/28/%E6%95%B0%E5%AD%97%E7%94%B5%E8%B7%AF%E5%9F%BA%E7%A1%80/"/>
+    <id>https://yilozt.github.io/2023/01/28/%E6%95%B0%E5%AD%97%E7%94%B5%E8%B7%AF%E5%9F%BA%E7%A1%80/</id>
+    <published>2023-01-28T14:26:34.000Z</published>
+    <updated>2023-01-28T14:26:34.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="verilog" scheme="https://yilozt.github.io/tags/verilog/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Win32 API 使用 GDI 输出文字</title>
+    <link href="https://yilozt.github.io/2023/01/20/Win32-API-%E4%BD%BF%E7%94%A8-GDI-%E8%BE%93%E5%87%BA%E6%96%87%E5%AD%97/"/>
+    <id>https://yilozt.github.io/2023/01/20/Win32-API-%E4%BD%BF%E7%94%A8-GDI-%E8%BE%93%E5%87%BA%E6%96%87%E5%AD%97/</id>
+    <published>2023-01-20T00:57:39.000Z</published>
+    <updated>2023-01-20T00:57:39.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="Win32" scheme="https://yilozt.github.io/tags/Win32/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Win32 API 多任务多线程</title>
+    <link href="https://yilozt.github.io/2023/01/15/Win32-API-%E5%A4%9A%E4%BB%BB%E5%8A%A1%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    <id>https://yilozt.github.io/2023/01/15/Win32-API-%E5%A4%9A%E4%BB%BB%E5%8A%A1%E5%A4%9A%E7%BA%BF%E7%A8%8B/</id>
+    <published>2023-01-15T14:03:03.000Z</published>
+    <updated>2023-01-15T14:03:03.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="Win32" scheme="https://yilozt.github.io/tags/Win32/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>C# Hello World (NixOS)</title>
+    <link href="https://yilozt.github.io/2022/11/11/csharp-hello-world/"/>
+    <id>https://yilozt.github.io/2022/11/11/csharp-hello-world/</id>
+    <published>2022-11-11T01:28:43.000Z</published>
+    <updated>2022-11-11T01:28:43.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="C#" scheme="https://yilozt.github.io/tags/C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>NixOS 下搭建 MySQL 环境学习</title>
+    <link href="https://yilozt.github.io/2022/10/31/SQL-init/"/>
+    <id>https://yilozt.github.io/2022/10/31/SQL-init/</id>
+    <published>2022-10-31T14:18:51.000Z</published>
+    <updated>2022-10-31T14:18:51.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="MySQL" scheme="https://yilozt.github.io/tags/MySQL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Cpp: 格式化输出</title>
+    <link href="https://yilozt.github.io/2022/10/23/Cpp-%E6%A0%BC%E5%BC%8F%E5%8C%96%E8%BE%93%E5%87%BA/"/>
+    <id>https://yilozt.github.io/2022/10/23/Cpp-%E6%A0%BC%E5%BC%8F%E5%8C%96%E8%BE%93%E5%87%BA/</id>
+    <published>2022-10-23T05:55:19.000Z</published>
+    <updated>2022-10-23T05:55:19.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="C++" scheme="https://yilozt.github.io/tags/C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Cpp: 类与枚举</title>
+    <link href="https://yilozt.github.io/2022/10/23/Cpp-%E7%B1%BB%E4%B8%8E%E6%9E%9A%E4%B8%BE/"/>
+    <id>https://yilozt.github.io/2022/10/23/Cpp-%E7%B1%BB%E4%B8%8E%E6%9E%9A%E4%B8%BE/</id>
+    <published>2022-10-22T17:15:49.000Z</published>
+    <updated>2022-10-22T17:15:49.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="Cpp" scheme="https://yilozt.github.io/tags/Cpp/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Cpp: 错误与异常</title>
+    <link href="https://yilozt.github.io/2022/10/21/Cpp-%E9%94%99%E8%AF%AF%E4%B8%8E%E5%BC%82%E5%B8%B8/"/>
+    <id>https://yilozt.github.io/2022/10/21/Cpp-%E9%94%99%E8%AF%AF%E4%B8%8E%E5%BC%82%E5%B8%B8/</id>
+    <published>2022-10-21T13:20:59.000Z</published>
+    <updated>2022-10-21T13:20:59.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="C++" scheme="https://yilozt.github.io/tags/C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Go:String()方法和调试输出</title>
+    <link href="https://yilozt.github.io/2022/10/20/Go-String-%E6%96%B9%E6%B3%95%E5%92%8C%E6%A0%BC%E5%BC%8F%E5%8C%96%E6%8F%8F%E8%BF%B0%E7%AC%A6/"/>
+    <id>https://yilozt.github.io/2022/10/20/Go-String-%E6%96%B9%E6%B3%95%E5%92%8C%E6%A0%BC%E5%BC%8F%E5%8C%96%E6%8F%8F%E8%BF%B0%E7%AC%A6/</id>
+    <published>2022-10-20T14:04:06.000Z</published>
+    <updated>2022-10-20T14:04:06.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="golang" scheme="https://yilozt.github.io/tags/golang/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>动态规划</title>
+    <link href="https://yilozt.github.io/2022/10/19/dp/"/>
+    <id>https://yilozt.github.io/2022/10/19/dp/</id>
+    <published>2022-10-19T05:13:53.000Z</published>
+    <updated>2022-10-19T05:13:53.000Z</updated>
+    
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>数据结构(图)</title>
+    <link href="https://yilozt.github.io/2022/09/20/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E5%9B%BE/"/>
+    <id>https://yilozt.github.io/2022/09/20/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E5%9B%BE/</id>
+    <published>2022-09-20T00:05:43.000Z</published>
+    <updated>2022-09-20T00:05:43.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Nix药丸(x</title>
+    <link href="https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/"/>
+    <id>https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/</id>
+    <published>2022-09-15T03:32:01.000Z</published>
+    <updated>2022-09-15T03:32:01.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>cs_architecture_notes</title>
+    <link href="https://yilozt.github.io/2022/04/01/cs-architecture-notes/"/>
+    <id>https://yilozt.github.io/2022/04/01/cs-architecture-notes/</id>
+    <published>2022-04-01T15:33:48.000Z</published>
+    <updated>2022-04-01T15:33:48.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>OpenGL超级宝典第七版学习笔记 (6)：着色器和程序</title>
+    <link href="https://yilozt.github.io/2022/03/04/openglsb7rs-6/"/>
+    <id>https://yilozt.github.io/2022/03/04/openglsb7rs-6/</id>
+    <published>2022-03-04T15:17:31.000Z</published>
+    <updated>2022-03-04T15:17:31.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    <category term="学习笔记" scheme="https://yilozt.github.io/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"/>
+    
+    
+    <category term="OpenGL" scheme="https://yilozt.github.io/tags/OpenGL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>OpenGL超级宝典第七版学习笔记 (5)：数据</title>
+    <link href="https://yilozt.github.io/2022/01/23/openglsb7rs-5/"/>
+    <id>https://yilozt.github.io/2022/01/23/openglsb7rs-5/</id>
+    <published>2022-01-23T05:35:55.000Z</published>
+    <updated>2022-01-23T05:35:55.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    <category term="学习笔记" scheme="https://yilozt.github.io/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"/>
+    
+    
+    <category term="OpenGL" scheme="https://yilozt.github.io/tags/OpenGL/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Rust code hide Test</title>
+    <link href="https://yilozt.github.io/2022/01/21/Rust-code-hide-Test/"/>
+    <id>https://yilozt.github.io/2022/01/21/Rust-code-hide-Test/</id>
+    <published>2022-01-21T13:17:59.000Z</published>
+    <updated>2022-01-21T13:17:59.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="test" scheme="https://yilozt.github.io/tags/test/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Arch Linux 安装 Anbox 笔记</title>
+    <link href="https://yilozt.github.io/2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/"/>
+    <id>https://yilozt.github.io/2021/10/18/Arch-Linux-%E5%AE%89%E8%A3%85-Anbox-%E7%AC%94%E8%AE%B0/</id>
+    <published>2021-10-18T00:51:42.000Z</published>
+    <updated>2021-10-18T00:51:42.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+    <category term="Arch" scheme="https://yilozt.github.io/tags/Arch/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>使用 git 在 vps 上部署 hexo 博客</title>
+    <link href="https://yilozt.github.io/2021/10/17/hello-world/"/>
+    <id>https://yilozt.github.io/2021/10/17/hello-world/</id>
+    <published>2021-10-17T02:51:42.000Z</published>
+    <updated>2021-10-17T02:51:42.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html"></summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+</feed>

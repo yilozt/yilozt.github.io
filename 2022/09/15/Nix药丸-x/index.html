@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="用来记录自己读 Nix in Pills 的一些笔记。主要是关于 NixOS 的包管理器、nix 语言入门到打包的教程。强烈推荐阅读原文。  nix 官方文档：https:&#x2F;&#x2F;nixos.org&#x2F;manual&#x2F;nix&#x2F;   安装软件包  使用 nix-env 会将软件包安装到当前用户的环境中，用户之间的环境是隔离的。不同用户可以安装不同的软件包。 nix-env 用来管理用户环境、配置文件 hel">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nix药丸(x">
+<meta property="og:url" content="https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/index.html">
+<meta property="og:site_name" content="笔记本">
+<meta property="og:description" content="用来记录自己读 Nix in Pills 的一些笔记。主要是关于 NixOS 的包管理器、nix 语言入门到打包的教程。强烈推荐阅读原文。  nix 官方文档：https:&#x2F;&#x2F;nixos.org&#x2F;manual&#x2F;nix&#x2F;   安装软件包  使用 nix-env 会将软件包安装到当前用户的环境中，用户之间的环境是隔离的。不同用户可以安装不同的软件包。 nix-env 用来管理用户环境、配置文件 hel">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-09-15T03:32:01.000Z">
+<meta property="article:author" content="yilozt">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="../../../../images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="../../../../images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="../../../../images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Nix药丸(x</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="atom.xml" title="笔记本" type="application/atom+xml">
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="../../../../index.html">首页</a></li><!--
+     --><!--
+       --><li><a href="../../../../archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="../../../../tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="../../../../categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="../../../../booklist/">书单</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="../../20/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E5%9B%BE/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="../../../04/01/cs-architecture-notes/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&text=Nix药丸(x"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&is_video=false&description=Nix药丸(x"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Nix药丸(x&body=Check out this article: https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&name=Nix药丸(x&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&t=Nix药丸(x"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E8%BD%AF%E4%BB%B6%E5%8C%85"><span class="toc-number">1.</span> <span class="toc-text"> 安装软件包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9E%E6%BB%9A%E7%8E%AF%E5%A2%83"><span class="toc-number">2.</span> <span class="toc-text"> 回滚环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E4%BE%9D%E8%B5%96"><span class="toc-number">3.</span> <span class="toc-text"> 查看依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8D%E7%BD%AE%E7%94%A8%E6%88%B7%E7%8E%AF%E5%A2%83"><span class="toc-number">4.</span> <span class="toc-text"> 重置用户环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#channels"><span class="toc-number">5.</span> <span class="toc-text"> Channels</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#nix-%E8%AF%AD%E8%A8%80"><span class="toc-number">6.</span> <span class="toc-text"> Nix 语言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="toc-number">6.1.</span> <span class="toc-text"> 运算符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="toc-number">6.2.</span> <span class="toc-text"> 标识符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">6.3.</span> <span class="toc-text"> 字符串</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%97%E8%A1%A8"><span class="toc-number">6.4.</span> <span class="toc-text"> 列表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%9E%E6%80%A7%E9%9B%86"><span class="toc-number">6.5.</span> <span class="toc-text"> 属性集</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#if-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.6.</span> <span class="toc-text"> If 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#let-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.7.</span> <span class="toc-text"> Let 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#with-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.8.</span> <span class="toc-text"> With 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%83%B0%E6%80%A7%E6%B1%82%E5%80%BC"><span class="toc-number">6.9.</span> <span class="toc-text"> 惰性求值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">6.10.</span> <span class="toc-text"> 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%BC%E5%85%A5%E6%96%87%E4%BB%B6"><span class="toc-number">6.11.</span> <span class="toc-text"> 导入文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%93%E5%8C%85"><span class="toc-number">7.</span> <span class="toc-text"> 打包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#derivation-%E5%87%BD%E6%95%B0"><span class="toc-number">7.1.</span> <span class="toc-text"> derivation 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-bash-%E8%84%9A%E6%9C%AC%E4%BD%9C%E4%B8%BA-builder"><span class="toc-number">7.2.</span> <span class="toc-text"> 使用 bash 脚本作为 builder</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%BC%E5%85%A5-nixpkgs"><span class="toc-number">7.2.1.</span> <span class="toc-text"> 导入 nixpkgs</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91-c-%E7%A8%8B%E5%BA%8F"><span class="toc-number">7.3.</span> <span class="toc-text"> 编译 C 程序</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Nix药丸(x
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">yilozt</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-09-15T03:32:01.000Z" itemprop="datePublished">2022-09-15</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>用来记录自己读 <a target="_blank" rel="noopener" href="https://nixos.org/guides/nix-pills/why-you-should-give-it-a-try.html">Nix in Pills</a> 的一些笔记。主要是关于 NixOS 的包管理器、nix 语言入门到打包的教程。强烈推荐阅读原文。</p>
+<ul>
+<li>nix 官方文档：<a target="_blank" rel="noopener" href="https://nixos.org/manual/nix/">https://nixos.org/manual/nix/</a></li>
+</ul>
+<h2 id="安装软件包"><a class="markdownIt-Anchor" href="#安装软件包"></a> 安装软件包</h2>
+<ul>
+<li>使用 nix-env 会将软件包安装到当前用户的环境中，用户之间的环境是隔离的。不同用户可以安装不同的软件包。</li>
+<li>nix-env 用来管理用户环境、配置文件</li>
+<li>hello 被安装到了 HOME 目录下面，但其实是一个指向 <code>/nix/store</code> 的一个链接，软件包其实存到了 <code>/nix-store</code> 那里</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env -i hello</span><br><span class="line">$ hello</span><br><span class="line">世界你好！</span><br><span class="line">$ which hello</span><br><span class="line">/home/luo/.nix-profile/bin/hello</span><br><span class="line">$ ls -l ~/.nix-profile/bin/hello </span><br><span class="line">/home/luo/.nix-profile/bin/hello -&gt; /nix/store/zdlqwiz6zc3jhgpns893d1igb99q7xin-hello-2.12/bin/hello</span><br></pre></td></tr></table></figure>
+<p>列出已经安装的软件包：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env -q</span><br><span class="line">baobab-42.0</span><br><span class="line">d-feet-0.3.16</span><br><span class="line">gnome-menus-3.36.0</span><br></pre></td></tr></table></figure>
+<h2 id="回滚环境"><a class="markdownIt-Anchor" href="#回滚环境"></a> 回滚环境</h2>
+<p>使用 <code>-i</code> 安装软件包会生成新的用户环境。查看生成的用户环境：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env --list-generations </span><br><span class="line">  30   2022-09-15 11:20:13   </span><br><span class="line">  31   2022-09-15 11:47:32   (current)</span><br></pre></td></tr></table></figure>
+<p>滚回旧环境：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env --rollback</span><br><span class="line">switching profile from version 31 to 30</span><br></pre></td></tr></table></figure>
+<p>切换到新环境：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env -G 32</span><br><span class="line">switching profile from version 30 to 32</span><br></pre></td></tr></table></figure>
+<h2 id="查看依赖"><a class="markdownIt-Anchor" href="#查看依赖"></a> 查看依赖</h2>
+<p>查看软件包的所有依赖的文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">nix-store -qR `which man`</span><br><span class="line">/nix/store/gfqwbax0x58mjnh89ca6milx41bw49lr-libunistring-1.0</span><br><span class="line">/nix/store/9jqiw71lq60sdpiniywq3msknf3wmd9c-libidn2-2.3.2</span><br><span class="line">/nix/store/lxpdbaazqd2s79jx6lngr8nak2rjdaq1-glibc-2.34-210</span><br><span class="line">/nix/store/pnqyyr621w93zqb550q5889b1ri1qah5-gcc-11.3.0-lib</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>可以用来导出一个软件包，将列出的文件复制到其他机器上，就相当与给它安装配置了 man 命令。</p>
+<p>查看树状图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nix-store -q --tree `which man`</span><br></pre></td></tr></table></figure>
+<p>查看用户环境的所有依赖：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$nix-store -qR ~/.nix-profile</span><br></pre></td></tr></table></figure>
+<h2 id="重置用户环境"><a class="markdownIt-Anchor" href="#重置用户环境"></a> 重置用户环境</h2>
+<p>卸载所有在当前环境安装的软件包：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ nix-env -e &#x27;*&#x27;</span><br><span class="line">uninstalling &#x27;hello-2.10&#x27;</span><br><span class="line">uninstalling &#x27;nix-2.1.3&#x27;</span><br><span class="line">[...]</span><br></pre></td></tr></table></figure>
+<p>回滚：<code>nix-env --rollback</code></p>
+<h2 id="channels"><a class="markdownIt-Anchor" href="#channels"></a> Channels</h2>
+<p>感觉像是 Arch 上的软件源，可以使用 nix-channel 查看，内容存在 <code>~/.nix-channels</code> 这个文件里: <code>nix-channel --list</code></p>
+<h2 id="nix-语言"><a class="markdownIt-Anchor" href="#nix-语言"></a> Nix 语言</h2>
+<p>进入交互环境：<code>nix repl</code></p>
+<p>当然也可以直接上 Nix Manual: <a target="_blank" rel="noopener" href="https://nixos.org/manual/nix/stable/language/index.html">https://nixos.org/manual/nix/stable/language/index.html</a></p>
+<h3 id="运算符"><a class="markdownIt-Anchor" href="#运算符"></a> 运算符</h3>
+<p>加减乘法和其他语言一样：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="number">1</span> + <span class="number">1</span></span><br><span class="line"><span class="number">2</span></span><br><span class="line">nix-repl&gt; <span class="number">1</span> - <span class="number">1</span></span><br><span class="line"><span class="number">0</span></span><br><span class="line">nix-repl&gt; <span class="number">1</span> * <span class="number">1</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>除法需要强制在运算符旁边加空格：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="number">3.0</span> / <span class="number">2.0</span></span><br><span class="line"><span class="number">1.5</span></span><br></pre></td></tr></table></figure>
+<p>不加被解析成路径，nix 里路径作为一种类型：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="number">3.0</span>/<span class="number">2.0</span>   </span><br><span class="line">/home/luo/<span class="number">3.0</span>/<span class="number">2.0</span></span><br></pre></td></tr></table></figure>
+<h3 id="标识符"><a class="markdownIt-Anchor" href="#标识符"></a> 标识符</h3>
+<p><code>-</code> 可以用作标识符，<code>a-b</code> 这种变量名是完全 ok 的</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">a-b</span> = <span class="number">123</span></span><br><span class="line">nix-repl&gt; a-b</span><br><span class="line"><span class="number">123</span></span><br></pre></td></tr></table></figure>
+<h3 id="字符串"><a class="markdownIt-Anchor" href="#字符串"></a> 字符串</h3>
+<p>可以用 <code>&quot;</code> 和 <code>''</code> 定义：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="string">&quot;foo&quot;</span></span><br><span class="line"><span class="string">&quot;foo&quot;</span></span><br><span class="line">nix-repl&gt; <span class="string">&#x27;&#x27;bar&#x27;&#x27;</span></span><br><span class="line"><span class="string">&quot;bar&quot;</span></span><br></pre></td></tr></table></figure>
+<p>字符串模板，在 <code>$&#123;&#125;</code>里可以放任何 nix 表达式，用来生成字符串：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span> </span><br><span class="line"><span class="string">&quot;5&quot;</span></span><br><span class="line">nix-repl&gt; <span class="attr">foo=&quot;Hello&quot;</span>  </span><br><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;foo&#125;</span>&quot;</span></span><br><span class="line"><span class="string">&quot;Hello&quot;</span></span><br></pre></td></tr></table></figure>
+<p>Bash Shell 选手表示很赞</p>
+<p>在 <code>&quot;</code> 定义的字符串里，用 <code>\$&#123;&#125;</code> 来避免表达式被替换：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="string">&quot;2 + 3 = \<span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span>     </span><br><span class="line"><span class="string">&quot;2 + 3 = <span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span></span><br><span class="line">nix-repl&gt; <span class="string">&quot;2 + 3 = <span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span>  </span><br><span class="line"><span class="string">&quot;2 + 3 = 5&quot;</span></span><br></pre></td></tr></table></figure>
+<p>在 <code>''</code> 定义的字符串里，用 <code>''$&#123;&#125;</code> 来避免表达式被替换（只能说是很怪的语法）：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="string">&#x27;&#x27;2 + 3 = <span class="char escape_">&#x27;&#x27;$</span>&#123;toString (2 + 3)&#125;&#x27;&#x27;</span>     </span><br><span class="line"><span class="string">&quot;2 + 3 = <span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span></span><br><span class="line">nix-repl&gt; <span class="string">&quot;2 + 3 = <span class="subst">$&#123;<span class="built_in">toString</span> (<span class="number">2</span> + <span class="number">3</span>)&#125;</span>&quot;</span>  </span><br><span class="line"><span class="string">&quot;2 + 3 = 5&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="列表"><a class="markdownIt-Anchor" href="#列表"></a> 列表</h3>
+<p>不可变，增加或删除元素返回的新创建的列表</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; [ <span class="number">2</span> <span class="string">&quot;foo&quot;</span> <span class="literal">true</span> (<span class="number">2</span>+<span class="number">3</span>) ]</span><br><span class="line">[ <span class="number">2</span> <span class="string">&quot;foo&quot;</span> <span class="literal">true</span> <span class="number">5</span> ]</span><br></pre></td></tr></table></figure>
+<h3 id="属性集"><a class="markdownIt-Anchor" href="#属性集"></a> 属性集</h3>
+<p>类似于 js 的对象：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">s</span> = &#123;  <span class="attr">foo</span> = <span class="string">&quot;bar&quot;</span>; <span class="attr">a-b</span> = <span class="string">&quot;baz&quot;</span>; <span class="string">&quot;123&quot;</span> = <span class="string">&quot;num&quot;</span>; &#125;</span><br><span class="line">nix-repl&gt; s</span><br><span class="line">&#123; <span class="string">&quot;123&quot;</span> = <span class="string">&quot;num&quot;</span>; <span class="attr">a-b</span> = <span class="string">&quot;baz&quot;</span>; <span class="attr">foo</span> = <span class="string">&quot;bar&quot;</span>; &#125;</span><br></pre></td></tr></table></figure>
+<p>访问属性：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; s.a-b</span><br><span class="line"><span class="string">&quot;baz&quot;</span></span><br><span class="line">nix-repl&gt; s.<span class="string">&quot;123&quot;</span> </span><br><span class="line"><span class="string">&quot;num&quot;</span></span><br></pre></td></tr></table></figure>
+<p>属性里<strong>引用</strong>其他属性的值，需要使用递归属性集：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = a+<span class="number">4</span>; &#125;</span><br><span class="line">error: undefined variable &#x27;a&#x27;</span><br><span class="line"></span><br><span class="line">       at «string»:<span class="number">1</span>:<span class="number">14</span>:</span><br><span class="line"></span><br><span class="line">            <span class="number">1</span>| &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = a+<span class="number">4</span>; &#125;</span><br><span class="line">nix-repl&gt; <span class="keyword">rec</span> &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = a+<span class="number">4</span>; &#125;</span><br><span class="line">&#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">7</span>; &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="if-表达式"><a class="markdownIt-Anchor" href="#if-表达式"></a> If 表达式</h3>
+<p>必须有 else 分支，表达式需要返回值：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">a</span> = <span class="number">3</span></span><br><span class="line">nix-repl&gt; <span class="attr">b</span> = <span class="number">4</span></span><br><span class="line">nix-repl&gt; <span class="keyword">if</span> a &gt; b <span class="keyword">then</span> <span class="string">&quot;yes&quot;</span> <span class="keyword">else</span> <span class="string">&quot;no&quot;</span></span><br><span class="line"><span class="string">&quot;no&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="let-表达式"><a class="markdownIt-Anchor" href="#let-表达式"></a> Let 表达式</h3>
+<p>用来给 in 之后的表达式定义局部变量：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a</span> = <span class="string">&quot;Hello&quot;</span>; <span class="attr">b</span> = <span class="string">&quot;World&quot;</span>; <span class="keyword">in</span> <span class="string">&quot;<span class="subst">$&#123;a&#125;</span>, <span class="subst">$&#123;b&#125;</span>&quot;</span>     </span><br><span class="line"><span class="string">&quot;Hello, World&quot;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>let 表达式可以相互嵌套：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a=3;</span> <span class="keyword">in</span> <span class="keyword">let</span> <span class="attr">b=4;</span> <span class="keyword">in</span> a + b</span><br><span class="line"><span class="number">7</span></span><br></pre></td></tr></table></figure>
+<p>可以在定义变量时引用其他变量</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = a + <span class="number">4</span>; <span class="keyword">in</span> b</span><br><span class="line"><span class="number">7</span></span><br></pre></td></tr></table></figure>
+<h3 id="with-表达式"><a class="markdownIt-Anchor" href="#with-表达式"></a> With 表达式</h3>
+<p>主要用来将导出属性集里的属性：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">longName</span> = &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; &#125;</span><br><span class="line">nix-repl&gt; <span class="keyword">with</span> longName; a + b</span><br><span class="line"><span class="number">7</span></span><br></pre></td></tr></table></figure>
+<p>可以和 let 表达式一起使用:</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">longName</span> = &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; &#125;</span><br><span class="line"><span class="keyword">with</span> longName; <span class="keyword">let</span> <span class="attr">b</span> = <span class="number">4</span>; <span class="keyword">in</span> a + b</span><br></pre></td></tr></table></figure>
+<p>如果属性集导出的属性和外部变量冲突了，相同的值不会被覆盖：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">longName</span> = &#123; <span class="attr">a</span> = <span class="number">3</span>; &#125; </span><br><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a</span> = <span class="number">4</span>; <span class="keyword">in</span> <span class="keyword">with</span> longName; a</span><br><span class="line"><span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p>但依然可以通过 longName.a 来访问属性：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">longName</span> = &#123; <span class="attr">a</span> = <span class="number">3</span>; &#125; </span><br><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a</span> = <span class="number">4</span>; <span class="keyword">in</span> <span class="keyword">with</span> longName; longName.a</span><br><span class="line"><span class="number">3</span></span><br></pre></td></tr></table></figure>
+<h3 id="惰性求值"><a class="markdownIt-Anchor" href="#惰性求值"></a> 惰性求值</h3>
+<p>nix 只会在需要的时候对表达式进行求值：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># a 没有被用到 --&gt; 不会被求值 --&gt; 没有发生除 0 错误</span></span><br><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">a</span> = <span class="built_in">builtins</span>.div <span class="number">4</span> <span class="number">0</span>; <span class="attr">b</span> = <span class="number">6</span>; <span class="keyword">in</span> b  </span><br><span class="line"><span class="number">6</span></span><br></pre></td></tr></table></figure>
+<h3 id="函数"><a class="markdownIt-Anchor" href="#函数"></a> 函数</h3>
+<ul>
+<li>匿名（lambdas）</li>
+<li>只接收一个参数</li>
+</ul>
+<p>语法：<code>参数名: 函数体</code>，冒号旁边的空格不能省略</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; x: x * <span class="number">2</span></span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">1</span>»</span><br></pre></td></tr></table></figure>
+<p>给 lambdas 表达式赋个值，就能调用了：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">double</span> = x: x * <span class="number">2</span></span><br><span class="line">nix-repl&gt; double</span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">2</span>»</span><br><span class="line">nix-repl&gt; double <span class="number">4</span></span><br><span class="line"><span class="number">8</span></span><br><span class="line">nix-repl&gt; double <span class="number">12</span></span><br><span class="line"><span class="number">24</span></span><br></pre></td></tr></table></figure>
+<p>当然也可以像 js 那样用立即调用函数表达式（IIFE）：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; (x: x * <span class="number">2</span>) <span class="number">121</span>   </span><br><span class="line"><span class="number">242</span></span><br></pre></td></tr></table></figure>
+<p>把上面的过程想象成 JS 大概是这样的：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="keyword">const</span> double = <span class="keyword">function</span> (<span class="params">x</span>) &#123; <span class="keyword">return</span> x * <span class="number">2</span> &#125;</span><br><span class="line"><span class="literal">undefined</span></span><br><span class="line">&gt; double</span><br><span class="line">[<span class="title class_">Function</span>: double]</span><br><span class="line">&gt; <span class="title function_">double</span>(<span class="number">4</span>)</span><br><span class="line"><span class="number">8</span></span><br><span class="line">&gt; <span class="title function_">double</span>(<span class="number">12</span>)</span><br><span class="line"><span class="number">24</span></span><br></pre></td></tr></table></figure>
+<p>要让函数接收多个参数，就只能嵌套 lambda 表达式：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = a: (b: a*b)</span><br><span class="line">nix-repl&gt; mul</span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">2</span>»</span><br><span class="line">nix-repl&gt; mul <span class="number">3</span></span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">6</span>»</span><br><span class="line">nix-repl&gt; (mul <span class="number">3</span>) <span class="number">4</span>  </span><br><span class="line"><span class="number">12</span></span><br></pre></td></tr></table></figure>
+<p>对应的 js 大概长这样：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="keyword">const</span> mul = <span class="keyword">function</span> (<span class="params">a</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">function</span> (<span class="params">b</span>) &#123; <span class="keyword">return</span> a * b &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="literal">undefined</span></span><br><span class="line">&gt; mul</span><br><span class="line">[<span class="title class_">Function</span>: mul]</span><br><span class="line">&gt; <span class="title function_">mul</span>(<span class="number">3</span>)</span><br><span class="line">[<span class="title class_">Function</span> (anonymous)]</span><br><span class="line">&gt; <span class="title function_">mul</span>(<span class="number">3</span>)(<span class="number">4</span>)</span><br><span class="line"><span class="number">12</span></span><br></pre></td></tr></table></figure>
+<p>其实就是定义了函数的函数，调用过程大概长这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(mul 3) 4 =&gt; (b: 3 * b) 4</span><br><span class="line">          =&gt; 3 * 4</span><br><span class="line">          =&gt; 12</span><br></pre></td></tr></table></figure>
+<p>Nix 在解析代码时会自己判断合理的优先级，因此括号可以省略：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = a: b: a*b</span><br><span class="line">nix-repl&gt; mul</span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">2</span>»</span><br><span class="line">nix-repl&gt; mul <span class="number">3</span></span><br><span class="line">«lambda @ (string):<span class="number">1</span>:<span class="number">6</span>»</span><br><span class="line">nix-repl&gt; mul <span class="number">3</span> <span class="number">4</span>  </span><br><span class="line"><span class="number">12</span></span><br><span class="line">nix-repl&gt; mul (<span class="number">3</span>+<span class="number">4</span>) (<span class="number">5</span>+<span class="number">6</span>)</span><br><span class="line"><span class="number">77</span></span><br></pre></td></tr></table></figure>
+<p>也可以先将函数参数打包成属性集再传进去：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = s: s.a*s.b</span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; &#125;</span><br><span class="line"><span class="number">12</span></span><br><span class="line">nix-repl&gt; <span class="attr">mul</span> = &#123; a, b &#125;: a*b</span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; &#125;</span><br><span class="line"><span class="number">12</span></span><br></pre></td></tr></table></figure>
+<p><code>mul = &#123; a, b &#125;: a*b</code> 这种写法传进去的属性集只能有两个属性：<code>a</code> 和 <code>b</code>，不能多也不能少。</p>
+<p>默认参数：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = &#123; a, b ? <span class="number">2</span> &#125;: a*b</span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; &#125;</span><br><span class="line"><span class="number">6</span></span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; &#125;</span><br><span class="line"><span class="number">12</span></span><br></pre></td></tr></table></figure>
+<p>接收额外属性：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = &#123; a, b, ... &#125;: a*b</span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; <span class="attr">c</span> = <span class="number">2</span>; &#125;</span><br></pre></td></tr></table></figure>
+<p>使用 <code>@</code> 给传进去的属性集设置别名：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = s@&#123; a, b, ... &#125;: a*b*s.c</span><br><span class="line">nix-repl&gt; mul &#123; <span class="attr">a</span> = <span class="number">3</span>; <span class="attr">b</span> = <span class="number">4</span>; <span class="attr">c</span> = <span class="number">2</span>; &#125;</span><br><span class="line"><span class="number">24</span></span><br></pre></td></tr></table></figure>
+<p>既然可以传属性集，当然也能传一个列表进去（虽然没多大用就是了）：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">mul</span> = args:                                               </span><br><span class="line">          <span class="built_in">builtins</span>.elemAt args <span class="number">0</span> * <span class="built_in">builtins</span>.elemAt args <span class="number">1</span></span><br><span class="line">nix-repl&gt; mul [ <span class="number">11</span> <span class="number">22</span> ]</span><br><span class="line"><span class="number">242</span></span><br></pre></td></tr></table></figure>
+<h3 id="导入文件"><a class="markdownIt-Anchor" href="#导入文件"></a> 导入文件</h3>
+<p>import 是 nix 内置的函数，用来解析并执行文件内的表达式：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ echo &#x27;<span class="number">3</span>&#x27; &gt; a.nix</span><br><span class="line">$ echo &#x27;<span class="number">4</span>&#x27; &gt; b.nix</span><br><span class="line">$ echo &#x27;a: b: a * b&#x27; &gt; mul.nix</span><br><span class="line">$ nix repl</span><br><span class="line">Welcome to Nix <span class="number">2.8</span>.<span class="number">1</span>. Type :? for help.</span><br><span class="line">nix-repl&gt; <span class="attr">a</span> = <span class="built_in">import</span> ./a.nix</span><br><span class="line">nix-repl&gt; <span class="attr">b</span> = <span class="built_in">import</span> ./b.nix</span><br><span class="line">nix-repl&gt; <span class="attr">mul</span> = <span class="built_in">import</span> ./mul.nix</span><br><span class="line">nix-repl&gt; mul a b</span><br><span class="line"><span class="number">12</span></span><br></pre></td></tr></table></figure>
+<p>nix 文件不会主动继承外部变量：</p>
+<p>test.nix:</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x</span><br></pre></td></tr></table></figure>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="keyword">let</span> <span class="attr">x</span> = <span class="number">5</span>; <span class="keyword">in</span> <span class="built_in">import</span> ./test.nix</span><br><span class="line">error: undefined variable &#x27;x&#x27;</span><br><span class="line"></span><br><span class="line">       at /tmp/a/test.nix:<span class="number">1</span>:<span class="number">1</span>:</span><br><span class="line"></span><br><span class="line">            <span class="number">1</span>| x</span><br><span class="line">             | ^</span><br></pre></td></tr></table></figure>
+<p>向 nix 文件导入变量的方法是：使用函数</p>
+<p>test.nix</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123; a, b ? <span class="number">3</span>, trueMsg ? <span class="string">&quot;yes&quot;</span>, falseMsg ? <span class="string">&quot;no&quot;</span> &#125;:</span><br><span class="line"><span class="keyword">if</span> a &gt; b</span><br><span class="line">  <span class="keyword">then</span> <span class="built_in">builtins</span>.trace trueMsg <span class="literal">true</span></span><br><span class="line">  <span class="keyword">else</span> <span class="built_in">builtins</span>.trace falseMsg <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="built_in">import</span> ./test.nix &#123; <span class="attr">a</span> = <span class="number">5</span>; <span class="attr">trueMsg</span> = <span class="string">&quot;ok&quot;</span>; &#125;</span><br><span class="line">trace: ok</span><br><span class="line"><span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h2 id="打包"><a class="markdownIt-Anchor" href="#打包"></a> 打包</h2>
+<h3 id="derivation-函数"><a class="markdownIt-Anchor" href="#derivation-函数"></a> derivation 函数</h3>
+<p><a target="_blank" rel="noopener" href="https://nixos.org/manual/nix/stable/language/derivations.html">derivation</a> 是 nix 内置的函数，用来定义软件包，接收一个属性集，其中 <code>system</code>、<code>name</code>、<code>builder</code> 这三个属性是必须的：</p>
+<ul>
+<li><code>system</code>：系统类型，如 <code>x86_64-darwin</code>、<code>i686-linux</code>，一般可以用 <code>builtins.currentSystem</code> 代替</li>
+<li><code>name</code>：软件包名</li>
+<li><code>builder</code>：构建软件包执行的二进制文件</li>
+</ul>
+<p><code>derivation</code> 执行后会在 <code>/nix/store</code> 下生成一个 <code>.drv</code> 文件，包含了软件包的元信息：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">d</span> = <span class="built_in">derivation</span> &#123; <span class="attr">name</span> = <span class="string">&quot;mypackage&quot;</span>; <span class="attr">builder</span> = <span class="string">&quot;mybuilder&quot;</span>; <span class="attr">system</span> = <span class="string">&quot;mysystem&quot;</span>; &#125; </span><br><span class="line">nix-repl&gt; d</span><br><span class="line">«<span class="built_in">derivation</span> /nix/store/nvvkzyjj661xjfhr64gxp920dpa3vabq-mypackage.drv»</span><br></pre></td></tr></table></figure>
+<p>查看 .drv 文件的信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ nix show-derivation //nix/store/nvvkzyjj661xjfhr64gxp920dpa3vabq-mypackage.drv</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;/nix/store/nvvkzyjj661xjfhr64gxp920dpa3vabq-mypackage.drv&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;outputs&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;out&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;path&quot;</span>: <span class="string">&quot;/nix/store/p458kqdn6gzjrd2cqgghxym6939j798f-mypackage&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;inputSrcs&quot;</span>: [],</span><br><span class="line">    <span class="string">&quot;inputDrvs&quot;</span>: &#123;&#125;,</span><br><span class="line">    <span class="string">&quot;system&quot;</span>: <span class="string">&quot;mysystem&quot;</span>,</span><br><span class="line">    <span class="string">&quot;builder&quot;</span>: <span class="string">&quot;mybuilder&quot;</span>,</span><br><span class="line">    <span class="string">&quot;args&quot;</span>: [],</span><br><span class="line">    <span class="string">&quot;env&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;builder&quot;</span>: <span class="string">&quot;mybuilder&quot;</span>,</span><br><span class="line">      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;mypackage&quot;</span>,</span><br><span class="line">      <span class="string">&quot;out&quot;</span>: <span class="string">&quot;/nix/store/p458kqdn6gzjrd2cqgghxym6939j798f-mypackage&quot;</span>,</span><br><span class="line">      <span class="string">&quot;system&quot;</span>: <span class="string">&quot;mysystem&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当构建软件包时，整个构建过程在一个隔离的环境中进行，不会从当前 shell 继承环境变量，只有 .drv 文件里 <code>env</code> 那部分环境变量才能被 builder 所使用。</p>
+<p>在 nix repl 里构建软件包：<code>:b</code> 命令</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; <span class="attr">d</span> = <span class="built_in">derivation</span> &#123; <span class="attr">name</span> = <span class="string">&quot;mypackage&quot;</span>; <span class="attr">builder</span> = <span class="string">&quot;mybuilder&quot;</span>; <span class="attr">system</span> = <span class="string">&quot;mysystem&quot;</span>; &#125; </span><br><span class="line">nix-repl&gt; :b d</span><br><span class="line">error: a &#x27;mysystem&#x27; <span class="keyword">with</span> features &#123;&#125; is required to build &#x27;/nix/store/nvvkzyjj661xjfhr64gxp920dpa3vabq-mypackage.drv&#x27;, but I am a &#x27;x86_64-linux&#x27; <span class="keyword">with</span> features &#123;benchmark, big-parallel, kvm, nixos-test&#125;</span><br><span class="line">[<span class="number">0.0</span> MiB DL]</span><br></pre></td></tr></table></figure>
+<p>在 nix repl 外构建软件包：<code>nix-store -r &lt;drv 文件路径&gt;</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ nix-store -r /nix/store/3ln5l2s4jsi9b4fdgrqrs1vpfrng577d-myname.drv</span><br><span class="line">this derivation will be built:</span><br><span class="line">  /nix/store/3ln5l2s4jsi9b4fdgrqrs1vpfrng577d-myname.drv</span><br><span class="line">building <span class="string">&#x27;/nix/store/3ln5l2s4jsi9b4fdgrqrs1vpfrng577d-myname.drv&#x27;</span>...</span><br><span class="line">error: builder <span class="keyword">for</span> <span class="string">&#x27;/nix/store/3ln5l2s4jsi9b4fdgrqrs1vpfrng577d-myname.drv&#x27;</span> failed to produce output path <span class="keyword">for</span> output <span class="string">&#x27;out&#x27;</span> at <span class="string">&#x27;/nix/store/3ln5l2s4jsi9b4fdgrqrs1vpfrng577d-myname.drv.chroot/nix/store/5xk3bxckdamy8mjav6pb2m6nbsv6v5a1-myname&#x27;</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用-bash-脚本作为-builder"><a class="markdownIt-Anchor" href="#使用-bash-脚本作为-builder"></a> 使用 bash 脚本作为 builder</h3>
+<h4 id="导入-nixpkgs"><a class="markdownIt-Anchor" href="#导入-nixpkgs"></a> 导入 nixpkgs</h4>
+<p>nixpkgs 包含了 nix 所有软件包的元数据，在 repl 中，可以使用 <code>:l &lt;nixpkgs&gt;</code> 导入 nixpkgs 的所有属性，之后就可以查询软件包的路径了：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; :l &lt;nixpkgs&gt; </span><br><span class="line">Added <span class="number">16535</span> variables.</span><br><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;rustc&#125;</span>&quot;</span></span><br><span class="line"><span class="string">&quot;/nix/store/l4hnh2x7nr6jmzypg1p0wv90yascvqnn-rustc-1.60.0&quot;</span></span><br><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;bash&#125;</span>&quot;</span>  </span><br><span class="line"><span class="string">&quot;/nix/store/xbdqbi2mscmhl5wcpbgpjdwxbsrvpkil-bash-5.1-p16&quot;</span></span><br><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;gcc&#125;</span>&quot;</span>  </span><br><span class="line"><span class="string">&quot;/nix/store/yzs8390walgk2rwl6i5li2g672hdn0kv-gcc-wrapper-11.3.0&quot;</span></span><br></pre></td></tr></table></figure>
+<p>之后编写打包时要执行的脚本：<code>builder.sh</code>，这里的 out 则是在 .drv 中生成的环境变量：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> -x</span><br><span class="line"><span class="built_in">echo</span> foo &gt; <span class="variable">$out</span></span><br></pre></td></tr></table></figure>
+<p>在 repl里定义元件包，将 bash shell 的路径作为 builder，system 则沿用当前的系统：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">nix-repl&gt; :l &lt;nixpkgs&gt;</span><br><span class="line">Added <span class="number">16535</span> variables.</span><br><span class="line">nix-repl&gt; <span class="string">&quot;<span class="subst">$&#123;bash&#125;</span>&quot;</span></span><br><span class="line"><span class="string">&quot;/nix/store/xbdqbi2mscmhl5wcpbgpjdwxbsrvpkil-bash-5.1-p16&quot;</span></span><br><span class="line">nix-repl&gt; <span class="attr">d</span> = <span class="built_in">derivation</span> &#123;                 </span><br><span class="line">          <span class="attr">name</span> = <span class="string">&quot;bashbuilderpkg&quot;</span>;         </span><br><span class="line">          <span class="attr">builder</span> = <span class="string">&quot;<span class="subst">$&#123;bash&#125;</span>/bin/bash&quot;</span>;    </span><br><span class="line">          <span class="attr">system</span> = <span class="built_in">builtins</span>.currentSystem;</span><br><span class="line">          <span class="attr">args</span> = [ ./builder.sh ];         </span><br><span class="line">          &#125;</span><br><span class="line">nix-repl&gt; :b d</span><br><span class="line">[<span class="number">0</span>/<span class="number">1</span> built] querying bashbuilderpkg on https://mirrors.tuna.tsinghua.edu.c</span><br><span class="line"></span><br><span class="line">This <span class="built_in">derivation</span> produced the following outputs:</span><br><span class="line">  out -&gt; /nix/store/qkwa2c986xval09amhb541205lccb3g8-bashbuilderpkg</span><br><span class="line">[<span class="number">1</span> built, <span class="number">0.0</span> MiB DL]</span><br></pre></td></tr></table></figure>
+<p>这里将 bash shell 的文件路径作为 <code>builder</code>，而多了一个 <code>args</code> 的属性，这个属性将被作为 <code>builder</code> 的命令参数。这里就相当于在构建的时候执行 <code>bash ./builder.sh</code>，当然 <code>builder.sh</code> 在构建时已经被复制到 <code>/nix/store</code>了，执行的是 <code>/nix/store</code> 里的 <code>builder.sh</code>。</p>
+<p>输出结果就是将 <code>foo</code> 写入 <code>/nix/store/qkwa2c986xval09amhb541205lccb3g8-bashbuilderpkg</code>，也就是 <code>$out</code> 环境变量中。</p>
+<p>注意的是 <code>args</code> 里面的数据类型是<strong>路径</strong>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /nix/store/qkwa2c986xval09amhb541205lccb3g8-bashbuilderpkg</span><br><span class="line">foo</span><br><span class="line">$ </span><br></pre></td></tr></table></figure>
+<p>当然也可以查看 .drv 文件的内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">$ nix show-derivation /nix/store/nx8gr08m20ix951sn92pswmmag7bylqx-bashbuilderpkg.drv</span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;/nix/store/nx8gr08m20ix951sn92pswmmag7bylqx-bashbuilderpkg.drv&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;outputs&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;out&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;path&quot;</span>: <span class="string">&quot;/nix/store/qkwa2c986xval09amhb541205lccb3g8-bashbuilderpkg&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;inputSrcs&quot;</span>: [</span><br><span class="line">      <span class="string">&quot;/nix/store/2cdc3wsrmynhbzzzbs9n95cv4xm39ixc-builder.sh&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;inputDrvs&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;/nix/store/9rd3h7acgcirfvgvxvq7h58s45af4agn-bash-5.1-p16.drv&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;out&quot;</span></span><br><span class="line">      ]</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;system&quot;</span>: <span class="string">&quot;x86_64-linux&quot;</span>,</span><br><span class="line">    <span class="string">&quot;builder&quot;</span>: <span class="string">&quot;/nix/store/xbdqbi2mscmhl5wcpbgpjdwxbsrvpkil-bash-5.1-p16/bin/bash&quot;</span>,</span><br><span class="line">    <span class="string">&quot;args&quot;</span>: [</span><br><span class="line">      <span class="string">&quot;/nix/store/2cdc3wsrmynhbzzzbs9n95cv4xm39ixc-builder.sh&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;env&quot;</span>: &#123;</span><br><span class="line">      <span class="string">&quot;builder&quot;</span>: <span class="string">&quot;/nix/store/xbdqbi2mscmhl5wcpbgpjdwxbsrvpkil-bash-5.1-p16/bin/bash&quot;</span>,</span><br><span class="line">      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;bashbuilderpkg&quot;</span>,</span><br><span class="line">      <span class="string">&quot;out&quot;</span>: <span class="string">&quot;/nix/store/qkwa2c986xval09amhb541205lccb3g8-bashbuilderpkg&quot;</span>,</span><br><span class="line">      <span class="string">&quot;system&quot;</span>: <span class="string">&quot;x86_64-linux&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到 <code>args</code> 那里的 <code>builder.sh</code> 已经被复制到 <code>/nix/store</code> 里了，<code>bash</code> 的路径也被填充到实际存储的位置。</p>
+<h3 id="编译-c-程序"><a class="markdownIt-Anchor" href="#编译-c-程序"></a> 编译 C 程序</h3>
+<p>simple.c:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;Simple!&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="http://builder.sh">builder.sh</a>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> -ex</span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$PATH</span>:<span class="variable">$coreutils</span>/bin:<span class="variable">$gcc</span>/bin</span><br><span class="line"><span class="built_in">mkdir</span> -p <span class="variable">$out</span></span><br><span class="line">gcc -o <span class="variable">$out</span>/simple <span class="variable">$src</span></span><br></pre></td></tr></table></figure>
+<p>在 repl 中导入 nixpkgs，生成 .drv 文件：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ nix repl</span><br><span class="line">Welcome to Nix <span class="number">2.8</span>.<span class="number">1</span>. Type :? for help.</span><br><span class="line"></span><br><span class="line">nix-repl&gt; :l &lt;nixpkgs&gt;</span><br><span class="line">Added <span class="number">16535</span> variables.</span><br><span class="line">nix-repl&gt; <span class="attr">d</span> = <span class="built_in">derivation</span> &#123;</span><br><span class="line">    <span class="attr">name</span> = <span class="string">&quot;simple_c&quot;</span>;</span><br><span class="line">    <span class="attr">system</span> = <span class="built_in">builtins</span>.currentSystem;</span><br><span class="line">    <span class="attr">builder</span> = <span class="string">&quot;<span class="subst">$&#123;bash&#125;</span>/bin/bash&quot;</span>;</span><br><span class="line">    <span class="attr">args</span> = [ ./builder.sh ];</span><br><span class="line">    <span class="attr">gcc</span> = gcc;</span><br><span class="line">    <span class="attr">coreutils</span> = coreutils;</span><br><span class="line">    <span class="attr">src</span> = ./simple.c;</span><br><span class="line">&#125;</span><br><span class="line">nix-repl&gt; :b d</span><br><span class="line">This <span class="built_in">derivation</span> produced the following outputs:</span><br><span class="line">  out -&gt; /nix/store/cwxmpg1gwfa1i4kzfcxn8mhpjfw206k5-simple_c</span><br><span class="line">[<span class="number">1</span> built, <span class="number">0.0</span> MiB DL]</span><br><span class="line">nix-repl&gt; :q</span><br><span class="line">$ /nix/store/cwxmpg1gwfa1i4kzfcxn8mhpjfw206k5-simple_c/simple </span><br><span class="line">Simple!</span><br></pre></td></tr></table></figure>
+<p>这里在传递给 <code>derivation</code> 属性集里添加了几个自定义的属性：<code>gcc</code>、<code>coreutils</code>、<code>src</code>，这些属性将会导出成 <code>builder</code> 编译时需要的环境变量。</p>
+<p>可以将 <code>derivation</code> 函数里的内容写到一个 <code>simple.nix</code> 文件里：</p>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> (<span class="built_in">import</span> &lt;nixpkgs&gt; &#123;&#125;); <span class="built_in">derivation</span> &#123;</span><br><span class="line">    <span class="attr">name</span> = <span class="string">&quot;simple_c&quot;</span>;</span><br><span class="line">    <span class="attr">system</span> = <span class="built_in">builtins</span>.currentSystem;</span><br><span class="line">    <span class="attr">builder</span> = <span class="string">&quot;<span class="subst">$&#123;bash&#125;</span>/bin/bash&quot;</span>;</span><br><span class="line">    <span class="attr">args</span> = [ ./builder.sh ];</span><br><span class="line">    <span class="keyword">inherit</span> gcc coreutils;</span><br><span class="line">    <span class="attr">src</span> = ./simple.c;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>import &lt;nixpkgs&gt; &#123;&#125;</code> 相当与 repl 里的 <code>:l &lt;nixpkgs&gt;</code></li>
+<li><code>inherit gcc coreutils</code> 给属性集添加了两个属性，其值继承自 nixpkgs 的值</li>
+</ul>
+<p>构建：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ nix-build ./simple.nix</span><br><span class="line">/nix/store/cwxmpg1gwfa1i4kzfcxn8mhpjfw206k5-simple_c</span><br></pre></td></tr></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="../../../../index.html">首页</a></li>
+         
+          <li><a href="../../../../archives/">归档</a></li>
+         
+          <li><a href="../../../../tags/">标签</a></li>
+         
+          <li><a href="../../../../categories/">分类</a></li>
+         
+          <li><a href="../../../../booklist/">书单</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E8%BD%AF%E4%BB%B6%E5%8C%85"><span class="toc-number">1.</span> <span class="toc-text"> 安装软件包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9E%E6%BB%9A%E7%8E%AF%E5%A2%83"><span class="toc-number">2.</span> <span class="toc-text"> 回滚环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E4%BE%9D%E8%B5%96"><span class="toc-number">3.</span> <span class="toc-text"> 查看依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8D%E7%BD%AE%E7%94%A8%E6%88%B7%E7%8E%AF%E5%A2%83"><span class="toc-number">4.</span> <span class="toc-text"> 重置用户环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#channels"><span class="toc-number">5.</span> <span class="toc-text"> Channels</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#nix-%E8%AF%AD%E8%A8%80"><span class="toc-number">6.</span> <span class="toc-text"> Nix 语言</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="toc-number">6.1.</span> <span class="toc-text"> 运算符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="toc-number">6.2.</span> <span class="toc-text"> 标识符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">6.3.</span> <span class="toc-text"> 字符串</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%97%E8%A1%A8"><span class="toc-number">6.4.</span> <span class="toc-text"> 列表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%9E%E6%80%A7%E9%9B%86"><span class="toc-number">6.5.</span> <span class="toc-text"> 属性集</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#if-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.6.</span> <span class="toc-text"> If 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#let-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.7.</span> <span class="toc-text"> Let 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#with-%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="toc-number">6.8.</span> <span class="toc-text"> With 表达式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%83%B0%E6%80%A7%E6%B1%82%E5%80%BC"><span class="toc-number">6.9.</span> <span class="toc-text"> 惰性求值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">6.10.</span> <span class="toc-text"> 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%BC%E5%85%A5%E6%96%87%E4%BB%B6"><span class="toc-number">6.11.</span> <span class="toc-text"> 导入文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%93%E5%8C%85"><span class="toc-number">7.</span> <span class="toc-text"> 打包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#derivation-%E5%87%BD%E6%95%B0"><span class="toc-number">7.1.</span> <span class="toc-text"> derivation 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-bash-%E8%84%9A%E6%9C%AC%E4%BD%9C%E4%B8%BA-builder"><span class="toc-number">7.2.</span> <span class="toc-text"> 使用 bash 脚本作为 builder</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%BC%E5%85%A5-nixpkgs"><span class="toc-number">7.2.1.</span> <span class="toc-text"> 导入 nixpkgs</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91-c-%E7%A8%8B%E5%BA%8F"><span class="toc-number">7.3.</span> <span class="toc-text"> 编译 C 程序</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&text=Nix药丸(x"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&is_video=false&description=Nix药丸(x"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Nix药丸(x&body=Check out this article: https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&title=Nix药丸(x"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&name=Nix药丸(x&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://yilozt.github.io/2022/09/15/Nix%E8%8D%AF%E4%B8%B8-x/&t=Nix药丸(x"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2023
+    yilozt
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="../../../../index.html">首页</a></li><!--
+     --><!--
+       --><li><a href="../../../../archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="../../../../tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="../../../../categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="../../../../booklist/">书单</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+ 
+  <link
+    rel="preload"
+    href="../../../../lib/font-awesome/css/all.min.css"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'"
+  />
+  <noscript
+    ><link
+      rel="stylesheet"
+      href="../../../../lib/font-awesome/css/all.min.css"
+  /></noscript>
+
+
+    <!-- jquery -->
+ 
+  
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+
+
+
+<!-- scrollreveal -->
+ 
+  
+<script src="/lib/scrollreveal/scrollreveal.min.js"></script>
+
+
+
+<!-- clipboard -->
+
+   
+    
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from($(trigger.nextElementSibling.querySelectorAll('.code')).find('.line')).reduce((st, i) => st + i.innerText + '\n', '')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<!-- hiding some code -->
+
+  <script type="text/javascript">
+  $(function() {
+    'use strict';
+    const langs = ['rust', 'glsl'].map(l => '.highlight.' + l + ' .btn-copy').join(',');
+
+    const lines_to_hide = {};
+
+    // hiding-code HTML
+    const eye_btn = "<span class=\"btn-eye tooltipped tooltipped-sw\" aria-label=\"expand\">"
+                + '  <i class="far fa-eye"></i>';
+                + '</span>';
+    // mount the btn
+    $(langs).before(eye_btn);
+
+    // build the lines to hide
+    const eyes = $('.btn-eye');
+    const tables = $('.btn-eye~table');
+
+    const match_codes = [];
+    const match_gutters = [];
+    const arrs = [match_codes, match_gutters];
+
+    const wrap_arrs = (spans) => {
+      // wraps lines in array into a span element
+      arrs.forEach(arr => {
+        if (arr.length > 0) {
+          $(arr).wrapAll("<span class='boring'></span>");
+          spans.push($(arr[0]).parent());
+          arr.length = 0;
+        }
+      });
+    };
+
+    for (let i = 0; i < eyes.length; i++) {
+      const id = "eye-" + i;
+      eyes[i].id = id;
+      const spans = [];
+      const gutters = tables[i].querySelectorAll(".gutter .line");
+      const codes = tables[i].querySelectorAll(".code .line");
+
+      for (let j = 0; j < codes.length; j++) {
+        if (codes[j].firstChild && codes[j].firstChild.textContent.startsWith("# ")) {
+          // push lines to hide into array
+          codes[j].firstChild.textContent = codes[j].firstChild.textContent.replace("# ", "");
+          match_codes.push(codes[j]);
+          match_codes.push(codes[j].nextElementSibling);
+          if (gutters[j] !== undefined) {
+            match_gutters.push(gutters[j]);
+            match_gutters.push(gutters[j].nextElementSibling);
+          }
+        } else {
+          wrap_arrs(spans);
+        }
+      }
+      wrap_arrs(spans);
+
+      if (spans.length === 0) {
+        $("#" + id).remove();
+      } else {
+        // add index
+        lines_to_hide[id] = spans;
+        spans.forEach(t => t.hide());
+      }
+    }
+    $('.code').addClass('show');
+
+    // handle click event
+    for ( let id in lines_to_hide) {
+      const btn = $("#" + id);
+      const icon = btn.find("i");
+      btn.on("click", (e) => {
+        if (icon.hasClass("fa-eye-slash")) {
+          // hide lines
+          lines_to_hide[id].forEach(t => t.fadeOut());
+          btn.attr("aria-label", "expand");
+          icon.removeClass("fa-eye-slash");
+        } else {
+          // show lines
+          lines_to_hide[id].forEach(t => t.fadeIn());
+          btn.attr("aria-label", "fold");
+          icon.addClass("fa-eye-slash");
+        }
+      })
+    }
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
