@@ -1,6 +1,26 @@
 theme = 'hugo-theme-console'
-
 defaultContentLanguage = 'en'
+
+enableGitInfo = true
+
+[frontmatter]
+  date = ["date", "publishDate", "lastmod"]
+  lastmod = ["lastmod", ":git", "date", "publishDate"]
+  publishDate = ["publishDate", "date"]
+  expiryDate = ["expiryDate"]
+
+[languages]
+  [languages.en]
+    title = "Yi's Notepad"
+    weight = 1
+    languageCode = 'en-us'
+    [languages.en.menu]
+
+  [languages.zh-cn]
+    title = 'Yi 的记事本'
+    weight = 2
+    languageCode = 'zh_CN'
+    [languages.zh-cn.menu]
 
 [markup]
   [markup.goldmark]
@@ -23,22 +43,18 @@ url = "about/"
 
 [[languages.zh-cn.params.navlinks]]
 name = "文章/"
-url = "posts/"
+url = "zh-cn/posts/"
 
 [[languages.zh-cn.params.navlinks]]
 name = "关于我/"
-url = "about/"
+url = "zh-cn/about/"
 
-[languages]
-  [languages.en]
-    title = "Yi's Notepad"
-    weight = 1
-  [languages.zh-cn]
-    title = 'Yi 的记事本'
-    weight = 2
+[[languages.zh-cn.params.navlinks]]
+name = "书单/"
+url = "zh-cn/reading-list/"
 
 [[languages.zh-cn.menu.main]]
-      name = 'ENG/'
+      name = 'EN/'
       url = '/'
       weight = 1
 
