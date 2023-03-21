@@ -35,23 +35,23 @@ enableGitInfo = true
 
 [[params.navlinks]]
 name = "posts/"
-url = "posts/"
+url = "/posts/"
 
 [[params.navlinks]]
 name = "about/"
-url = "about/"
+url = "/about/"
 
 [[languages.zh-cn.params.navlinks]]
 name = "文章/"
-url = "zh-cn/posts/"
+url = "/zh-cn/posts/"
 
 [[languages.zh-cn.params.navlinks]]
 name = "关于我/"
-url = "zh-cn/about/"
+url = "/zh-cn/about/"
 
 [[languages.zh-cn.params.navlinks]]
 name = "书单/"
-url = "zh-cn/reading-list/"
+url = "/zh-cn/reading-list/"
 
 [[languages.zh-cn.menu.main]]
       name = 'EN/'
