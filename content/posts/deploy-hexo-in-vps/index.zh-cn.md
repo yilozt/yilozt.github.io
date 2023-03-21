@@ -71,8 +71,9 @@ branches  config  description  HEAD  hooks  info  objects  refs
 ~~~bash
 #!/bin/sh
 echo "[1/3] Checkout contain of repository"
-blog="${GIT_DIR}/checkout"
-git --work-tree=${blog} -f
+blog="/checkout"
+mkdir -p ${blog}
+git --work-tree=${blog} checkout -f
 
 echo "[2/3] Install dependence of blog"
 cd ${blog}

@@ -104,8 +104,9 @@ directory and create a script named `post-receive` with following content:
 ~~~bash
 #!/bin/sh
 echo "[1/3] Checkout contain of repository"
-blog="${GIT_DIR}/checkout"
-git --work-tree=${blog} -f
+blog="/checkout"
+mkdir -p ${blog}
+git --work-tree=${blog} checkout -f
 
 echo "[2/3] Install dependence of blog"
 cd ${blog}
@@ -113,7 +114,7 @@ yarn install
 
 echo "[3/3] Build and deploy blog"
 yarn hexo generate
-rsync -avz --delete ${blog}/public/ /var/www/html/
+rsync -av --delete ${blog}/public/ /var/www/html/
 ~~~
 
 Also don't forget add executive access for script :) :
