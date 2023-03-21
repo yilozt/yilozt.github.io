@@ -1,6 +1,7 @@
 theme = 'hugo-theme-console'
 defaultContentLanguage = 'en'
 
+pygmentsUseClasses = false
 enableGitInfo = true
 
 [frontmatter]
