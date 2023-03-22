@@ -31,6 +31,7 @@ code table * {
     color: var(--secondary-color);
     font-size: 14px;
     cursor: pointer;
+    z-index: 9999;
 }
 
 .boring {
@@ -39,6 +40,8 @@ code table * {
 
 div pre {
     position: relative;
+    margin: 0;
+    padding: 0 16px;
 }
 
 table.hljs-ln {
@@ -49,10 +52,10 @@ table.hljs-ln {
     background-color: transparent !important;
 }
 
-pre code::after, pre code::before {
+/*pre code::after, pre code::before {
     content: "~~~";
     display: block;
-}
+}*/
 
 pre > code {
     overflow-x: auto;
