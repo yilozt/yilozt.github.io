@@ -98,3 +98,13 @@ ol > li::before {
     content: none;
     display: none;
 }
+
+.hljs-ln-line.hljs-ln-numbers {
+    word-break: normal;
+    padding-right: 10px;
+    width: 24px !important;
+}
+
+.hljs-ln-line.hljs-ln-numbers div {
+    margin: 0 !important;
+}

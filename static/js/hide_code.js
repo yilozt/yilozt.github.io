@@ -15,24 +15,17 @@ window.addEventListener('load', function () {
     codeBlocks[i].id = id;
 
     const table = codeBlocks[i].querySelector('table')
-    const gutters = table.querySelectorAll(".hljs-ln-numbers")
-    const codes = table.querySelectorAll(".hljs-ln-code");
+    const lines = table?.querySelectorAll(".hljs-ln-line.hljs-ln-code")
 
     const elem_to_hide = [];
 
-    for (let j = 0; j < codes.length; j++) {
-      if (codes[j].firstChild && codes[j].firstChild.textContent.startsWith("# ")) {
-        const lineObj = {}
+    for (let j = 0; lines && j < lines.length; j++) {
+      if (lines[j].firstChild && lines[j].firstChild.textContent.startsWith("# ")) {
         // push lines to hide into array
-        codes[j].firstChild.textContent = codes[j].firstChild.textContent.replace("# ", "");
-        codes[j].classList.add('boring')
-        lineObj.code = codes[j];
-        if (gutters[j] !== undefined) {
-          lineObj.line = gutters[j];
-          gutters[j].classList.add('boring')
-        }
+        lines[j].firstChild.textContent = lines[j].firstChild.textContent.replace("# ", "");
+        lines[j].parentElement.classList.add('boring')  
 
-        elem_to_hide.push(lineObj)
+        elem_to_hide.push(lines[j].parentElement)
       }
     }
 
@@ -52,8 +45,7 @@ window.addEventListener('load', function () {
 
       // Hide the lines
       elem_to_hide.forEach(function (t) {
-        if (t.line) t.line.style.display = 'none';
-        if (t.code) t.code.style.display = 'none';
+        t.style.display = 'none';
       });
     }
   }
@@ -66,15 +58,13 @@ window.addEventListener('load', function () {
       if (btn.textContent.indexOf('Fold') != -1) {
         // hide lines
         lines_to_hide[id].forEach(function (t) {
-          if (t.line) t.line.style.display = 'none';
-          if (t.code) t.code.style.display = 'none';
+          t.style.display = 'none';
         });
         btn.textContent = '/ Expand Code'
       } else {
         // show lines
         lines_to_hide[id].forEach(function (t) {
-          if (t.code) t.code.style.display = null
-          if (t.line) t.line.style.display = null;
+          t.style.display = null;
         });
         btn.textContent = '/ Fold Code'
       }
