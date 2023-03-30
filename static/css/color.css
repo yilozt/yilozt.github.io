@@ -14,6 +14,22 @@
     --primary-color: #2bbc8a;
 }
 
+table:not(code table) {
+    width: auto;
+}
+
+table:not(code table) th,
+table:not(code table) td  {
+    border: none;
+}
+table:not(code table) td:first-child  {
+    color: inherit;
+    font-weight: inherit;
+}
+
+table:not(code table) thead {
+    border-bottom: 1px solid;
+}
 
 .footer {
     border-top: dashed 2px;
