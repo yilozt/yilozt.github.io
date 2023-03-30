@@ -1,5 +1,5 @@
 theme = 'hugo-theme-console'
-defaultContentLanguage = 'en'
+defaultContentLanguage = 'zh-cn'
 
 pygmentsUseClasses = false
 enableGitInfo = true
