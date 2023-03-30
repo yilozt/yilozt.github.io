@@ -1,0 +1,10 @@
+\usetikzlibrary {automata,positioning}
+\begin{tikzpicture}[shorten >=1pt,node distance=2cm,auto]
+  \node[state]  (q_0)                {$0$};
+  \node[state]  (q_1) [right=of q_0] {$1$};
+
+  \path  -> (q_0) edge [->,bend left] node [above] {$\begin{aligned}R_D = 1, S_D = 0\end{aligned}$} (q_1)
+                  edge [loop left]    node [swap]  {$\begin{aligned}R_D = 0, S_D = 1 \\ R_D = 1, S_D = 1 \end{aligned}$} ()
+            (q_1) edge [->,bend left] node [below] {$\begin{aligned}R_D = 0, S_D = 1 \end{aligned}$} (q_0)
+                  edge [loop right]   node [swap]  {$\begin{aligned}R_D = 1, S_D = 0 \\ R_D = 1, S_D = 1 \end{aligned}$} ();
+\end{tikzpicture}
