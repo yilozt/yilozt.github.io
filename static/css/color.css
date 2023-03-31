@@ -118,6 +118,18 @@ ol > li::before {
     display: none;
 }
 
+ul>li,li>ul>li {
+    position: relative;
+    display: list-item;
+    list-style-type: '*';
+    margin-left: calc(var(--global-space));
+    padding-left: calc(var(--global-space));
+}
+
+ul>li::after {
+    content: none;
+}
+
 .hljs-ln-line.hljs-ln-numbers {
     word-break: normal;
     padding-right: 10px;

@@ -1,0 +1,58 @@
+\usetikzlibrary {circuits.logic.US, calc}
+\usetikzlibrary{decorations.markings}
+\begin{tikzpicture}[circuit logic US]
+  % elements
+  \matrix[column sep=30, row sep=20]
+  {
+    \node [nand gate] (n3) {}; \\
+    \node [nand gate] (n4) {}; \\
+  };
+  \node [nand gate, left, xshift=-40] (n1) at (n3.input 1) {};
+  \node [nand gate, left, xshift=-40] (n2) at (n4.input 2) {};
+
+  \node [blue, and gate, left, xshift=-40] (a1) at (n1.input 1) {};
+  \node [blue, and gate, left, xshift=-40] (a2) at (n2.input 2) {};
+
+  % labels
+  \node[blue, left, xshift=-30] (j) at (a1.input 2) {$J$};
+  \node[blue, left, xshift=-30] (k) at (a2.input 1) {$K$};
+  \node[left, xshift=-30] (clk) at ($(a1.input 1)!0.5!(a2.input 2)$) {$CLK$};
+  \node[right, xshift=40] (q)   at (n3.output) {$Q$};
+  \node[right, xshift=40] (nq)  at (n4.output) {$\overline{Q}$};
+
+  \node[above] (s) at ($(n1.input 1) + (left:0.4)$) {$S$};
+  \node[below] (rd) at ($(n2.input 2) + (left:0.4)$) {$R$};
+
+  % Rectangle
+  \coordinate (rec_top) at ($(s)+(-0.5,0.4)$);
+  \draw[dashed] (rec_top) rectangle ($(nq)+(-1.2,-0.9)$);
+
+  % lines
+  \draw[blue] (j) -- (a1.input 2);
+  \draw[blue] (k) -- (a2.input 1);
+  \draw[blue] (a1.output) -- (rec_top |- a1.output);
+  \draw[blue] (a2.output) -- (rec_top |- a2.output);
+  \draw[blue] (a1.input 1)-- ++(left:0.3) -- ++(up:0.8) -| ($(nq.west)+(-0.6, 0)$);
+  \draw[blue] (a2.input 2)-- ++(left:0.3) -- ++(down:0.8) -| ($(q.west)+(-0.3, 0)$);
+  \draw (n1.input 1) -- (rec_top |- a1.output);
+  \draw (n2.input 2) -- (rec_top |- a2.output);
+  \draw (n1.input 2) -- ++(left:0.7) |- (clk);
+  \draw (n2.input 1) -- ++(left:0.7) |- (clk);
+  \draw (n1.output) |- (n3.input 1);
+  \draw (n2.output) |- (n4.input 2);
+  \draw (n3.output) -- (q);
+  \draw (n4.output) -- (nq);
+  \draw[postaction={decorate,decoration={markings,mark=at position 1 with {\fill circle (2pt);}}}]
+    (n3.input 2) -- ++(left:0.7) -- ++(down:0.3)
+                 -- ($(n4.output)+(right:0.3)+(up:0.4)$)
+                 -- ($(n4.output)+(right:0.3)$);
+  \draw[postaction={decorate,decoration={markings,mark=at position 1 with {\fill circle (2pt);}}}]
+    (n4.input 1) -- ++(left:0.7) -- ++(up:0.3)
+                 -- ($(n3.output)+(right:0.3)+(down:0.4)$)
+                 -- ($(n3.output)+(right:0.3)$);
+
+  % connect nodes
+  \fill[blue] ($(nq.west)+(-0.6, 0)$) circle (2pt);
+  \fill[blue] ($(q.west)+(-0.3, 0)$)  circle (2pt);
+
+\end{tikzpicture}
