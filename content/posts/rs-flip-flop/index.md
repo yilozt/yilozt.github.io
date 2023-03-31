@@ -145,15 +145,11 @@ waveform when inputs **JUMP** from **00** to **11** while
 considering delay time:
 
 <table>
-<td>
 <tr>
-<img src="rs-unstable-delay-1.svg" style="max-width:200px;"/>
+<td><img src="rs-unstable-delay-1.svg" style="max-width:200px;"/></td>
+<td><img src="rs-unstable-delay-2.svg" style="max-width:200px;"/></td>
 </tr>
-<tr>
-<img src="rs-unstable-delay-2.svg" style="max-width:200px;"/>
-</tr>
-</td>
-<table>
+</table>
 
 When $DELAY(R_D) \le DELAY(S_D)$, output $Q$ is 1. When
 $DELAY(R_D) \ge DELAY(S_D)$, output $Q$ is 0. That's why the
