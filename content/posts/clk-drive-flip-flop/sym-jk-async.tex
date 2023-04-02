@@ -13,12 +13,12 @@
   \node[right] at (j) {$J$};
   \node[right] at (k) {$K$};
   \node[right] at (clk) {$CLK$};
-  \node[left,name=lq, xshift=-5]  at (q) {$Q$};
-  \node[left,name=lnq, xshift=-5] at (nq) {$Q$};
+  \node[left,name=lq]  at (q) {$Q$};
+  \node[left,name=lnq] at (nq) {$Q$};
 
   \draw[fill=white,draw=black] ($(nq)+(3pt,0)$) circle (3pt);
-  \draw[shorten >= 4pt, shorten <= 4pt] (lq.north west) -| (lq.south east);
-  \draw[shorten >= 4pt, shorten <= 4pt] (lnq.north west) -| (lnq.south east);
+  % \draw[shorten >= 4pt, shorten <= 4pt] (lq.north west) -| (lq.south east);
+  % \draw[shorten >= 4pt, shorten <= 4pt] (lnq.north west) -| (lnq.south east);
   
   % Low-level effective
   % \draw[fill=white,draw=black] ($(clk)-(3pt,0)$) circle (3pt);

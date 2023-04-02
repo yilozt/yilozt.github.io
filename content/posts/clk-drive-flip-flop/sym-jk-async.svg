@@ -74,17 +74,15 @@
   <use xlink:href="#glyph0-2" x="28.248219" y="48.248"/>
 </g>
 <g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
-  <use xlink:href="#glyph0-5" x="43.35" y="33.389"/>
+  <use xlink:href="#glyph0-5" x="48.332" y="33.389"/>
 </g>
 <g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
-  <use xlink:href="#glyph0-5" x="43.35" y="61.169"/>
+  <use xlink:href="#glyph0-5" x="48.332" y="61.169"/>
 </g>
 <path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 63.910156 58.734375 C 63.910156 57.578125 62.976562 56.640625 61.820312 56.640625 C 60.664062 56.640625 59.726562 57.578125 59.726562 58.734375 C 59.726562 59.890625 60.664062 60.824219 61.820312 60.824219 C 62.976562 60.824219 63.910156 59.890625 63.910156 58.734375 Z M 63.910156 58.734375 "/>
 <g clip-path="url(#clip3)" clip-rule="nonzero">
 <path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 53.790156 20.834625 C 53.790156 21.990875 52.856563 22.928375 51.700313 22.928375 C 50.544063 22.928375 49.606563 21.990875 49.606563 20.834625 C 49.606563 19.678375 50.544063 18.744781 51.700313 18.744781 C 52.856563 18.744781 53.790156 19.678375 53.790156 20.834625 Z M 53.790156 20.834625 " transform="matrix(1,0,0,-1,10.12,79.569)"/>
 </g>
-<path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 33.696406 56.510406 L 44.626094 56.510406 L 44.626094 44.709625 " transform="matrix(1,0,0,-1,10.12,79.569)"/>
-<path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 33.696406 28.729156 L 44.626094 28.729156 L 44.626094 16.928375 " transform="matrix(1,0,0,-1,10.12,79.569)"/>
 <path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 24.801875 69.447906 L 24.801875 79.369781 " transform="matrix(1,0,0,-1,10.12,79.569)"/>
 <g clip-path="url(#clip4)" clip-rule="nonzero">
 <path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 24.801875 -0.0013125 L 24.801875 -9.923188 " transform="matrix(1,0,0,-1,10.12,79.569)"/>

@@ -61,17 +61,15 @@
   <use xlink:href="#glyph0-2" x="28.248219" y="38.725"/>
 </g>
 <g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
-  <use xlink:href="#glyph0-5" x="43.35" y="16.922"/>
+  <use xlink:href="#glyph0-5" x="48.332" y="16.922"/>
 </g>
 <g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
-  <use xlink:href="#glyph0-5" x="43.35" y="58.592"/>
+  <use xlink:href="#glyph0-5" x="48.332" y="58.592"/>
 </g>
 <path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 63.910156 56.15625 C 63.910156 55 62.976562 54.0625 61.820312 54.0625 C 60.664062 54.0625 59.726562 55 59.726562 56.15625 C 59.726562 57.3125 60.664062 58.25 61.820312 58.25 C 62.976562 58.25 63.910156 57.3125 63.910156 56.15625 Z M 63.910156 56.15625 "/>
 <g clip-path="url(#clip4)" clip-rule="nonzero">
 <path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 53.790156 13.88975 C 53.790156 15.046 52.856563 15.9835 51.700313 15.9835 C 50.544063 15.9835 49.606563 15.046 49.606563 13.88975 C 49.606563 12.7335 50.544063 11.796 51.700313 11.796 C 52.856563 11.796 53.790156 12.7335 53.790156 13.88975 Z M 53.790156 13.88975 " transform="matrix(1,0,0,-1,10.12,70.046)"/>
 </g>
-<path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 33.696406 63.456156 L 44.626094 63.456156 L 44.626094 51.655375 " transform="matrix(1,0,0,-1,10.12,70.046)"/>
-<path style="fill:none;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 33.696406 21.784281 L 44.626094 21.784281 L 44.626094 9.9835 " transform="matrix(1,0,0,-1,10.12,70.046)"/>
 <path style="fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.3985;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 0.00109375 34.725688 C 0.00109375 35.881938 -0.936406 36.815531 -2.092656 36.815531 C -3.248906 36.815531 -4.1825 35.881938 -4.1825 34.725688 C -4.1825 33.569438 -3.248906 32.631938 -2.092656 32.631938 C -0.936406 32.631938 0.00109375 33.569438 0.00109375 34.725688 Z M 0.00109375 34.725688 " transform="matrix(1,0,0,-1,10.12,70.046)"/>
 </g>
 </svg>
