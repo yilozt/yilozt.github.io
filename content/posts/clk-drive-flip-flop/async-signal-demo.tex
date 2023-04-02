@@ -1,0 +1,84 @@
+\usetikzlibrary {circuits.logic.US, calc}
+\usetikzlibrary{decorations.markings}
+\begin{tikzpicture}[circuit logic US]
+  % elements
+  \matrix[row sep=40]
+  {
+    \node [nand gate] (n3) {}; \\
+    \node [nand gate] (n4) {}; \\
+  };
+  \node [nand gate, left, xshift=-120] (n1) at (n3.input 1) {};
+  \node [nand gate, left, xshift=-120] (n2) at (n4.input 2) {};
+
+  \node [blue, and gate, left, xshift=-40] (a1) at (n1.input 1) {};
+  \node [blue, and gate, left, xshift=-40] (a2) at (n2.input 2) {};
+
+  % labels
+  \node[blue, left, xshift=-30] (t) at (a1.input 2) {$T$};
+  \node[left, xshift=-30] (clk) at ($(a1.input 1)!0.5!(a2.input 2)$) {$CLK$};
+  \node[right, xshift=40] (q)   at (n3.output) {$Q$};
+  \node[right, xshift=40] (nq)  at (n4.output) {$\overline{Q}$};
+
+  \node[above] (s) at ($(n1.input 1) + (left:0.4)$) {$S$};
+  \node[below] (rd) at ($(n2.input 2) + (left:0.4)$) {$R$};
+
+  % Rectangle
+  \coordinate (rec_top) at ($(s)+(-0.5,0.4)$);
+  % \draw[dashed] (rec_top) rectangle ($(nq)+(-1.2,-0.9)$);
+
+  % lines
+  \draw[blue] (t) -- (a1.input 2);
+  \draw[blue] (a1.output) -- (rec_top |- a1.output);
+  \draw[blue] (a2.output) -- (rec_top |- a2.output);
+  \draw[blue] ($(a1.input 2)+(left:0.5)$) |- (a2.input 1);
+  \draw[blue] (a1.input 1)-- ++(left:0.3) -- ++(up:0.8) -| ($(nq.west)+(-0.6, 0)$);
+  \draw[blue] (a2.input 2)-- ++(left:0.2) -- ++(down:0.8) -| ($(q.west)+(-0.3, 0)$);
+  \draw (n1.input 1) -- (rec_top |- a1.output);
+  \draw (n2.input 2) -- (rec_top |- a2.output);
+  \draw (n1.input 2) -- ++(left:0.7) |- (clk);
+  \draw (n2.input 1) -- ++(left:0.7) |- (clk);
+  \draw (n3.output) -- (q);
+  \draw (n4.output) -- (nq);
+  \draw[postaction={decorate,decoration={markings,mark=at position 1 with {\fill circle (2pt);}}}]
+    (n3.input 2) -- ++(left:0.7) -- ++(down:0.3)
+                 -- ($(n4.output)+(right:0.3)+(up:0.4)$)
+                 -- ($(n4.output)+(right:0.3)$);
+  \draw[postaction={decorate,decoration={markings,mark=at position 1 with {\fill circle (2pt);}}}]
+    (n4.input 1) -- ++(left:0.7) -- ++(up:0.3)
+                 -- ($(n3.output)+(right:0.3)+(down:0.4)$)
+                 -- ($(n3.output)+(right:0.3)$);
+
+  % connect nodes
+  \fill[blue] ($(nq.west)+(-0.6, 0)$) circle (2pt);
+  \fill[blue] ($(q.west)+(-0.3, 0)$) circle (2pt);
+  \fill[blue] ($(a1.input 2)+(left:0.5)$) circle (2pt);
+
+  \draw[red!60!black] (n1.output) |- (n3.input 1);
+  \draw[red!60!black] (n2.output) |- (n4.input 2);
+  \draw[fill=white,draw=red!60!black, dashed]
+       ($(n1.output)!0.6!(n3.input 1) + (-0.8, 0.8)$) coordinate (asy1)
+       rectangle
+       ++ (1.6, -1.6)
+       node [pos=.5, red!60!black, scale=2] {$?$};
+  \draw[fill=white,draw=red!60!black, dashed]
+       ($(n2.output)!0.6!(n4.input 2) + (-0.8, 0.8)$) coordinate (asy2)
+       rectangle
+       ++ (1.6, -1.6)
+       node [pos=.5, red!60!black, scale=2] {$?$};
+
+  \fill[red!60!black] ($(asy1)+(-0.4,-0.6)$) coordinate (pa1) circle (2pt);
+  \node[red!60!black, yshift=40] (pre) at (pa1) {$PRE$};
+  \draw[red!60!black] (pre) |- ($(asy1)+(0,-0.6)$);
+  \draw[red!60!black] (pa1) |- ($(asy2)+(0,-0.6)$);
+
+  \fill[red!60!black] ($(asy2)+(-0.6, -1.1)$) coordinate (pa2) circle (2pt);
+  \node[red!60!black, yshift=-40] (cls) at (pa2) {$CLS$};
+  \draw[red!60!black] (cls) -- (pa2);
+  \draw[red!60!black] (pa2) -- (asy2 |- pa2);
+  \draw[red!60!black] (pa2) |- ($(asy1)+(0,-1.0)$);
+  \node[red!60!black, below, xshift=10] at (n1.output) {$S_{D}^{'}$}; 
+  \node[red!60!black, above, xshift=10] at (n2.output) {$R_{D}^{'}$};
+  \node[red!60!black, above, xshift=-10] at (n3.input 1) {$S_{D}$};
+  \node[red!60!black, below, xshift=-10] at (n4.input 2) {$R_{D}$};
+
+\end{tikzpicture}

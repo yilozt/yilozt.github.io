@@ -1,11 +1,11 @@
 ---
-title: "Clk Drive Flip Flop"
+title: "Clock-triggered Flip-flop"
 date: 2023-03-31T15:09:02+08:00
 draft: true
-summary: Clock trigger RS Flip flop, D flip flop, T flip flop, JK flip flop
+summary: '\[待完善\] The structure of clock-triggered RS Flip flop, D flip flop, T flip flop, JK flip flop.'
 ---
 
-# RS Flip Flop with Clock Triggering
+# Clock-Triggered RS Flip-flop
 
 <img style="max-width:420px;" src="./clk-drive-rs-flip-flop.svg"/>
 
