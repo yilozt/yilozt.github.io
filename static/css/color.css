@@ -125,6 +125,9 @@ ul>li,li>ul>li {
     margin-left: calc(var(--global-space));
     padding-left: calc(var(--global-space));
 }
+ul>li p {
+    margin-bottom: calc(var(--global-line-height)*0.2);
+}
 
 ul>li::after {
     content: none;
