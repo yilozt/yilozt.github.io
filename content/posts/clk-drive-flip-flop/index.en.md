@@ -1,36 +1,35 @@
 ---
 title: "Clock-triggered Flip-flop"
 date: 2023-03-31T15:09:02+08:00
-draft: true
-summary: The structure of clock-triggered RS Flip flop, D flip flop, T flip flop, JK flip flop.
+summary: Notes about the structure of clock-triggered RS flip-flop, D flip-flop, T flip-flop, and JK flip-flop.
 ---
 
 # Clock-Triggered RS Flip-flop
 
 We have discussed the [basic RS flip-flop](../rs-flip-flop/) that
-can remember one bit information. If we add two **NAND** gates on
-it, then we can control the on/off state of flip-flop:
+can remember one bit of information. If we add two **NAND** gates to it, then we control the on/off state of flip-flop:
 
 <img style="max-width:400px;" src="./clk-drive-rs-flip-flop.svg"/>
 
-Now we get a **clock-triggered flip-flop**. Here the $CLK$ is a
-`on/off` signal:
+Now we have a **clock-triggered flip-flop**. Here, the $CLK$ is 
+an `on/off` signal:
 
 * $CLK = 0$, **component is turn off**
   
-  Obtaining $
+  We obtain $
   \begin{cases} S_D = \overline{0\cdot S} = 1 \\\\ R_D = \overline{0 \cdot R} = 1 \end{cases}
-  $ , the RS Flip flop doesn't respond the changes from input.
+  $ , and the RS Flip-flop does not respond to any changes in
+  input.
   
   
 * $CLK = 1$, **component is working**
   
-  Obtaining $
+  We obtain $
   \begin{cases} S_D = \overline{1\cdot S} = \overline{S} \\\\ R_D = \overline{1 \cdot R} = \overline{R} \end{cases}
-  $ , the RS Flip flop responds the changes of input
+  $ , the RS Flip-flop responds to any changes of input.
 
-Now we can obtain $Q^{next}$ from basic RS flip-flop when
-$CLK$ is high-level:
+We can obtain $Q^{next}$ from basic RS flip-flop when
+$CLK$ is in the high-level:
 
 $$
 \begin{aligned}
@@ -39,7 +38,7 @@ Q^{next} &= \overline{S_D} + R_D Q^n \\\\
 \end{aligned}
 $$
 
-Constraint cases:
+And its constraint cases:
 
 $$
 \begin{aligned}
@@ -50,8 +49,8 @@ RS &= 0
 \end{aligned}
 $$
 
-So we can obtain state equation of the clock triggered RS
-flip-flop:
+Thus, we can obtain the state equation of the clock-triggered
+RS flip-flop:
 
 $$
 \begin{cases}
@@ -60,7 +59,8 @@ RS = 0 & (Constraint)
 \end{cases}
 $$
 
-Then we can write state transition table from its state equation:
+Then we can write the state transition table from its state
+equation:
 
 | $S$|$R$ | $Q^{next}$| Comment |
 |:---|:---|:---------:|:--------|
@@ -69,34 +69,35 @@ Then we can write state transition table from its state equation:
 | 1  | 0  |   1       |  Preset |
 | 1  | 1  | $\times$   |  Invalid|
 
-There are explanation for signals:
+Here are the explanations for input signals:
 
 * $S$: high-level effective, **Preset** signal
 * $R$: high-level effective, **Reset** signal
 
-The clock-triggered RS-flip-flop can control its on/off
-state by $CLK$ signal, but it still take attention to make
-inputs to satisfy $RS = 0$.
+The clock-triggered RS flip-flop can control its on/off
+state by the $CLK$ signal, but it still requires attention to
+make the inputs satisfy $RS = 0$.
 
-After add some extra logical gates on
-RS flip-flop, we can to satisfy this constraint by default，
-that's  following flip-flops we will discuss: D flip-flop,
-T flop-flop and JK-flip-flop.
+After adding some extra logical gates on
+the RS flip-flop, we can satisfy this constraint by default，
+that is the following flip-flops we will discuss: D flip-flop,
+T flip-flop and JK-flip-flop.
 
 # D Flip-flop
 
-The D flip-flop add a **NOT** gate in RS flip-flop and connect $S$ and $R$:
+A D flip-flop is constructed by adding a **NOT** gate to an RS
+flip-flop and connecting $S$ and $R$ to the input $D$:
 
 <img style="max-width:400px;" src="./clk-drive-d-flip-flop.svg"/>
 
-We can obtain the inputs of RS flip-flop: $
+We can obtain the inputs of the RS flip-flop as follows: $
 \begin{cases}
 S = D \\\\
 R = \overline{D}
 \end{cases}
-$, then we know D flip-flop satisfy the constraint
-$RS=\overline{D}D = 0$, We can obtain State Equation of
-D flip-flop from RS flip-flop:
+$, From this, we know that the D flip-flop satisfies the constraint
+$RS=\overline{D}D = 0$, We can obtain the state equation of
+the D flip-flop from the RS flip-flop:
 
 $$
 \begin{aligned}
@@ -106,34 +107,34 @@ Q^{next} &= S + \overline{R}Q^n \\\\
 \end{aligned}
 $$
 
-Now we can obtain the State Equation of D flip-flop is $Q^{next} = D$,  and its state
-transition table:
+Thus, the state equation of the D flip-flop is $Q^{next} = D$, and its state transition table is:
 
 | $D$  | $Q^{next}$ |
 |-----:|-----------:|
 |  0   |       0    |
 |  1   |       1    |
 
-The next state of D flip-flop only depends on its inputs, when
-flip-flop is triggered by edge, it can **_Delay_** the input $D$
-in a cycle.
+The next state of the D flip-flop only depends on its inputs 
+$D$. When the flip-flop is triggered by an edge,
+it **_Delays_** the input $D$ by one clock cycle.
 
 # T Flip Flop
 
-T Flip flop add two **AND** gates on RS flip flop and but
-controlled by one signal $T$, it can used to **_Toggle_** the
-output:
+A T Flip flop adds two **AND** gates to an RS flip-flop but is
+controlled by a single signal $T$, it can used to **_Toggle_**
+the output:
 
 <img style="max-width:450px;" src="./clk-drive-t-flip-flop.svg"/>
 
-Inputs for RS flip flop is controlled by signal $T$ now: $
+The inputs for the RS flip-flop are now controlled by the signal
+$T$ as follows: $
 \begin{cases}
 S = T\overline{Q^n} \\\\
 R = TQ^n
 \end{cases}
-$, for inner RS flip-flop, it also satisfy constraint $RS= TQ\cdot T\overline{Q} = 0$.
+$, for the inner RS flip-flop, it still satisfies the constraint $RS= TQ\cdot T\overline{Q} = 0$.
 
-We can obtain State equation of T flip-flop from inner RS
+We can obtain the state equation of T flip-flop from the inner RS
 flip-flop:
 
 $$
@@ -147,31 +148,30 @@ Q^{next} &=  S + \overline{R}Q^n \\\\
 \end{aligned}
 $$
 
-And list its state transition table:
+We can then list its state transition table from the state 
+equation :
 
 | $T$  | $Q^{next}$ |  Comment |
 |------|------------|----------|
 |  0   |   $Q$      |  Retain  |
 |  1   | $\overline{Q}$ | Toggle |
 
-
-
 # JK Flip Flop
 
-Just like T flip flop, JK flip flop add two **AND** Gate on RS
-flip-flop, but controlled by two input signal $J$ and $K$:
+Similar to the T flip-flop, the JK flip-flop add two **AND** 
+gates on the RS flip-flop, but this time controlled by two
+input signals, $J$ and $K$:
 
 <img style="max-width:440px;" src="./clk-drive-jk-flip-flop.svg"/>
 
-We can obtain the inputs for inner RS flip flop: $
+We can derive the inputs for the inner RS flip-flop as: $
 \begin{cases}
 S = J\overline{Q^n} \\\\
 R = KQ^n
 \end{cases}
-$, and we can infer that it satisfy the constraint  $RS= KQ^n\cdot J\overline{Q^n}  = 0$.
+$, and it satisfies the constraint $RS= KQ^n\cdot J\overline{Q^n}  = 0$.
 
-Let's infer state equation of JK flip-flop from inner RS
-flip-flop:
+Let's derive the state equation of the JK flip-flop from the inner RS flip-flop:
 
 $$
 \begin{aligned}
@@ -182,7 +182,7 @@ Q^{next} &=  S + \overline{R}Q^n \\\\
 \end{aligned}
 $$
 
-State Transition Table:
+The state transition table is as follows:
 
 | $J$  | $K$ | $Q^{next}$      | Comment  |
 |:----:|:---:|:---------------:|:--------:|
@@ -191,13 +191,12 @@ State Transition Table:
 |   1  |   0 |   1             |  Preset  |
 |   1  |   1 | $\overline{Q^n}$|  Toggle  |
 
-We can see that JK-flip flop have all functions from D flip-flop,
-RS flip-flop and T flip-flop.
+We can see that the JK flip-flop has all the functions of the D flip-flop, RS flip-flop, and T flip-flop.
 
-Symbols
-=======
+Logical Symbols
+===============
 
-This is common symbols of flip-flop triggered by clock:
+These are the common symbols for flip-flops triggered by a clock:
 
 <table>
   <tr>
@@ -208,7 +207,7 @@ This is common symbols of flip-flop triggered by clock:
   </tr>
 </table>
 
-For flip-flop effective in low-level clock signal, add a circle on input $CLK$:
+For flip-flops that are triggered by a low-level clock signal, a circle is added to the input $CLK$:
 
 <table>
   <tr>
@@ -219,10 +218,9 @@ For flip-flop effective in low-level clock signal, add a circle on input $CLK$:
   </tr>
 </table>
 
-The flip-flop will only update $Q^{next}$ when
-clock is effective.
+The flip-flop will only update $Q^{next}$ when the clock is effective.
 
-If flip-flop is effective in edge of clock signal, add triangle on input $CLK$:
+If the flip-flop is triggered at the edge of the clock signal, a triangle is added to the input $CLK$:
 
 <table>
   <tr>
@@ -233,16 +231,15 @@ If flip-flop is effective in edge of clock signal, add triangle on input $CLK$:
   </tr>
 </table>
 
-The flip-flop will only update $Q^{next}$ on
-edge of $CLK$ signal.
+The flip-flop will only update $Q^{next}$ at the edge of the $CLK$ signal.
 
+Asynchronous Flip-Flop Signals
+==============================
 
-Asynchronous Flip-Flop
-======================
-
-Above flip-flop we discussed only compute $Q^{next}$ only when 
-signal $CLK$ effective. If we add two input signal , we can control output without
-$CLK$ signal.
+The flip-flops discussed so far compute the $Q^{next}$
+when the $CLK$ signal is effective. By adding two input
+signals, we can control $Q^{next}$ without relying on
+the $CLK$ signal.
 
 <table>
   <tr>
@@ -252,42 +249,41 @@ $CLK$ signal.
   </tr>
 </table>
 
-The $PRE$ and $CLS$ are asynchronous signals, 
-they have higher priority than clock and other inputs and don't 
-controlled by clock signal, which can ignore other inputs
-of flip-flop and update $Q^{next}$ directly.
+The $PRE$ and $CLS$ are asynchronous signals that 
+have higher priority than other inputs and are not 
+controlled by the clock signal. These signal can ignore other
+inputs to flip-flop and update $Q^{next}$ forcibly.
 
 * $PRE=1$ and $CLS=1$, the flip-flop works normally.
-* $PRE=1$ and $CLS=0$, reset $Q$ to 0.
-* $PRE=0$ and $CLS=1$, preset $Q$ to 1.
+* $PRE=1$ and $CLS=0$, reset $Q$ to 0 forcibly.
+* $PRE=0$ and $CLS=1$, preset $Q$ to 1 forcibly.
 * $PRE=0$ and $CLS=0$, invalid input, may cause unstable output.
 
 ## A Possible implement
 
-Lets add extra gates on last level of flip-flop:
+We can modify the flip-flop circuit by adding extra gates on the last level of the flip-flop as shown below:
 
 <img style="max-width:480px;" src="./async-signal-demo.svg"/>
 
-After analyze the functions. We can design a combinational circuit to satisfy:
+After analyzing the function, we can design a combinational circuit that satisfies the following conditions:
 
 * $PRE=1$ and $CLS=1$, the flip-flop works normally.
   
   $\Rightarrow$ $S_D = S_D^{'}$, $R_D = R_D{'}$
 
-* $PRE=1$ and $CLS=0$, reset $Q$ to 0.
+* $PRE=1$ and $CLS=0$, the circuit resets $Q$ to 0.
   
   $\Rightarrow$ $S_D = 1$, $R_D = 0$
 
-* $PRE=0$ and $CLS=1$, preset $Q$ to 1.
+* $PRE=0$ and $CLS=1$, the circuit presets $Q$ to 1.
 
   $\Rightarrow$ $S_D = 0$, $R_D = 1$
 
-* $PRE=0$ and $CLS=0$, invalid input, may cause unstable output.
+* $PRE=0$ and $CLS=0$, invalid input and may cause unstable output.
 
   $\Rightarrow$ $S_D = 0$, $R_D = 0$
 
-Then we can list the truth table and inter its boolean
-expression for $S_D$ signal:
+We can use the truth table to derive the boolean expression for the $S_D$ signal from the above discussion:
 
 | $PRE$ | $CLS$ | $S_{D}^{'}$ | $S_D$ | Comment |
 |:-----:|:-----:|:-----------:|:-----:|:-------:|
@@ -299,6 +295,8 @@ expression for $S_D$ signal:
 |   1   |   0   |     1       |   1   | Reset   |
 |   1   |   1   |     0       |   0   | Working |
 |   1   |   1   |     1       |   1   | Working |
+
+The boolean expression for $S_D$ is:
 
 $$
 \begin{aligned}
@@ -318,7 +316,7 @@ S_D &= PRE \cdot \overline{CLS} \cdot \overline{S_D^{'}}
 \end{aligned}
 $$
 
-Infer signal $R_D$ correspondingly:
+Similarly, we can derive the boolean expression for the $R_D$ signal using the truth table below:
 
 | $PRE$ | $CLS$ | $R_{D}^{'}$ | $R_D$ | Comment |
 |:-----:|:-----:|:-----------:|:-----:|:-------:|
@@ -330,6 +328,8 @@ Infer signal $R_D$ correspondingly:
 |   1   |   0   |     1       |   0   | Reset   |
 |   1   |   1   |     0       |   0   | Working |
 |   1   |   1   |     1       |   1   | Working |
+
+The boolean expression for $R_D$ is:
 
 $$
 \begin{aligned}
