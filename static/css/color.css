@@ -1,4 +1,4 @@
-@media only screen and (max-width: 99999px) {
+/* @media only screen and (max-width: 99999px) {
     :root {
         --global-font-size: 15px;
     }
@@ -8,10 +8,10 @@
     :root {
         --global-font-size: 14px;
     }
-}
+} */
 
 :root {
-    --primary-color: #2bbc8a;
+    --primary-color: #6002EE;
 }
 
 table:not(code table) {

@@ -1,7 +1,10 @@
 ---
-title: 关于我
+title: 平平无奇的页面
 ---
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcOiGjk/bSuGGKHEyjSoQ1zVisanQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+Friends：
+[Caiji-Bai](https://caiji-bai.github.io)
+, [Qllly](https://github.com/Qllly)
+, [Dr-S1x17](https://github.com/Dr-S1x17)
 
-可以在这里找到我 [<i class="fab fa-github"></i>](https://github.com/yilozt).
+可以在这里找到我: [GitHub](https://github.com/yilozt)
