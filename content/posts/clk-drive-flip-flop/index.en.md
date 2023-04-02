@@ -194,15 +194,68 @@ State Transition Table:
 We can see that JK-flip flop have all functions from D flip-flop,
 RS flip-flop and T flip-flop.
 
+Symbols
+=======
+
+This is common symbols of flip-flop triggered by clock:
+
+<table>
+  <tr>
+    <td><img style="max-width:80px;" src="./sym-rs.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-d.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-t.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-jk.svg"/></td>
+  </tr>
+</table>
+
+For flip-flop effective in low-level clock signal, add a circle on input $CLK$:
+
+<table>
+  <tr>
+    <td><img style="max-width:80px;" src="./sym-rsn.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-dn.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-tn.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-jkn.svg"/></td>
+  </tr>
+</table>
+
+The flip-flop will only update $Q^{next}$ when
+clock is effective.
+
+If flip-flop is effective in edge of clock signal, add triangle on input $CLK$:
+
+<table>
+  <tr>
+    <td><img style="max-width:80px;" src="./sym-rs-edge.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-d-edge.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-t-edge.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-jk-edge.svg"/></td>
+  </tr>
+</table>
+
+The flip-flop will only update $Q^{next}$ on
+edge of $CLK$ signal.
 
 
 Asynchronous Flip-Flop
 ======================
 
 Above flip-flop we discussed only compute $Q^{next}$ only when 
-signal $CLK$ effective. If we add two input signal
-to inner basic RS flip-flip, we can control output without
+signal $CLK$ effective. If we add two input signal , we can control output without
 $CLK$ signal.
+
+<table>
+  <tr>
+    <td><img style="max-width:80px;" src="./sym-d-async.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-t-async.svg"/></td>
+    <td><img style="max-width:80px;" src="./sym-jk-async.svg"/></td>
+  </tr>
+</table>
+
+The $PRE$ and $CLS$ are asynchronous signals, 
+they have higher priority than clock and other inputs and don't 
+controlled by clock signal, which can ignore other inputs
+of flip-flop and update $Q^{next}$ directly.
 
 * $PRE=1$ and $CLS=1$, the flip-flop works normally.
 * $PRE=1$ and $CLS=0$, reset $Q$ to 0.
@@ -211,9 +264,11 @@ $CLK$ signal.
 
 ## A Possible implement
 
+Lets add extra gates on last level of flip-flop:
+
 <img style="max-width:480px;" src="./async-signal-demo.svg"/>
 
-We will design a combinational circuit that satisfy:
+After analyze the functions. We can design a combinational circuit to satisfy:
 
 * $PRE=1$ and $CLS=1$, the flip-flop works normally.
   
