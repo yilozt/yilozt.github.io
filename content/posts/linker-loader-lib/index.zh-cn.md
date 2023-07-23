@@ -688,3 +688,123 @@ hexdump --color -C ./cpp_sym_fix.o
   ……
   ```
 
+## 段描述符
+
+段表 = 段描述符数组，在 elf.h 中，段描述符对应的结构体是 `Elf32_Shdr`, `Elf64_Shdr`：
+
+```c
+typedef struct
+{
+  Elf32_Word	sh_name;		/* Section name (string tbl index) */
+  Elf32_Word	sh_type;		/* Section type */
+  Elf32_Word	sh_flags;		/* Section flags */
+  Elf32_Addr	sh_addr;		/* Section virtual addr at execution */
+  Elf32_Off	sh_offset;		    /* Section file offset */
+  Elf32_Word	sh_size;		/* Section size in bytes */
+  Elf32_Word	sh_link;		/* Link to another section */
+  Elf32_Word	sh_info;		/* Additional section information */
+  Elf32_Word	sh_addralign;	/* Section alignment */
+  Elf32_Word	sh_entsize;		/* Entry size if section holds table */
+} Elf32_Shdr;
+```
+
+* 其中 `sh_name` 是段的名字，但存储的是段名在字符串表 `.shstrtab` 的下标
+* 段的属性取决于 `sh_type` + `sh_flags`：
+  
+  ```c
+  /* Legal values for sh_type (section type).  */
+  #define SHT_NULL	  0		/* Section header table entry unused */
+  #define SHT_PROGBITS	  1		/* Program data */
+  #define SHT_SYMTAB	  2		/* Symbol table */
+  #define SHT_STRTAB	  3		/* String table */
+  #define SHT_RELA	  4		/* Relocation entries with addends */
+  #define SHT_HASH	  5		/* Symbol hash table */
+  #define SHT_DYNAMIC	  6		/* Dynamic linking information */
+  #define SHT_NOTE	  7		/* Notes */
+  #define SHT_NOBITS	  8		/* Program space with no data (bss) */
+  #define SHT_REL		  9		/* Relocation entries, no addends */
+  #define SHT_SHLIB	  10	/* Reserved */
+  #define SHT_DYNSYM	  11	/* Dynamic linker symbol table */
+  
+  // ...
+  /* Legal values for sh_flags (section flags).  */
+  #define SHF_WRITE	     (1 << 0)	/* Writable */
+  #define SHF_ALLOC	     (1 << 1)	/* Occupies memory during execution */
+  #define SHF_EXECINSTR	     (1 << 2)	/* Executable */
+  ```
+
+## 重定位表
+
+* 类型 *sh_type* 为 SHT_REL
+* 表名一般以 `.rela` 开头
+  * `.rela.text`：针对代码段的重定位表
+  * `.rela.data`：针对数据段的重定位表
+* `sh_link`：符号表的下标
+* `sh_info`：作用于哪个段
+
+## 字符串表
+
+* 通过字符串在表中的偏移来引用字符串
+* 常见的字符串表：
+  1. `.strtab`：String Table, 普通的字符串——*符号名……*
+  2. `.shstrtab`：Section Header String Table，段表中用到的字符串——*段名……*
+
+![str-table-content](str-table-content.png)
+![str-ref](str-ref.png)
+
+## 符号
+
+* 符号（Symbol） = 函数名 or 变量名
+* **符号表** 记录目标文件中用到的所有符号，记录每个符号的值，段名一般为 `.symtab`
+* 符号类型：
+  1. **定义**在本目标文件的**全局符号**
+  2. 本目标文件**引用到**的**全局符号**，在其他目标文件中定义
+  3. 段名，编译器产生
+  4. 局部符号，只在编译器内部可见
+  5. 行号信息，目标文件指令与源代码行之间的关系
+* 查看符号表的内容：
+  1. `objdump -t`
+  2. `readelf -s`
+  3. `nm`
+* 符号表 = `Elf32_Sym/Elf64_Sym` 数组：
+  
+  ```c
+  typedef struct
+  {
+    Elf64_Word	st_name;		/* Symbol name (string tbl index) */
+    unsigned char	st_info;	/* Symbol type and binding */
+    unsigned char st_other;		/* Symbol visibility */
+    Elf64_Section	st_shndx;	/* Section index */
+    Elf64_Addr	st_value;		/* Symbol value */
+    Elf64_Xword	st_size;		/* Symbol size */
+  } Elf64_Sym;
+  ```
+
+  * `st_info`：符号类型（低4位）和绑定信息（高28位）/ 对于 32 位而言：
+    
+    ```c
+    /* Legal values for ST_BIND subfield of st_info (symbol binding).  */
+    #define STB_LOCAL	0		/* Local symbol */
+    #define STB_GLOBAL	1		/* Global symbol */
+    #define STB_WEAK	2		/* Weak symbol */
+    // ...
+    /* Legal values for ST_TYPE subfield of st_info (symbol type).  */
+    #define STT_NOTYPE	0		/* Symbol type is unspecified */
+    #define STT_OBJECT	1		/* Symbol is a data object */
+    #define STT_FUNC	2		/* Symbol is a code object */
+    #define STT_SECTION	3		/* Symbol associated with a section */
+    #define STT_FILE	4		/* Symbol's name is file name */
+    #define STT_COMMON	5		/* Symbol is a common data object */
+    // ...
+    ```
+  * 符号表的第一个元素（下标0）总是一个 UND 符号（未定义）
+
+## 特殊符号
+
+* 被定义在*连接脚本中*，存在于链接后的**可执行文件**中
+* 常见的特殊符号（装载时的虚拟地址）：
+  1. `__executable_start`：程序在内存空间的起始地址
+  2. `__etext` / `_etext` / `etext`：代码段结束地址
+  3. `_edata` / `edata`：数据段结束地址
+  4. `_end` / `end`：程序的结束地址
+
