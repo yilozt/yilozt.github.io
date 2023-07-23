@@ -142,3 +142,14 @@ ul>li::after {
 .hljs-ln-line.hljs-ln-numbers div {
     margin: 0 !important;
 }
+
+.hljs-ln .hljs-ln-code {
+    overflow-x: auto;
+    text-wrap: nowrap;
+    white-space: nowrap;
+}
+
+p > img {
+    /* width: 100%; */
+    max-width: 700px;
+}
