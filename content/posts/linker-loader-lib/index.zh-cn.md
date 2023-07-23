@@ -376,4 +376,315 @@ as ./hello.S -o ./hello.o
 
 支持程序运行的基本函数的集合，一组目标文件组成的包
 
+# 第三章 目标文件里有什么
+
+## 目标文件的格式
+
+COFF（Common File Format）的变种：
+
+* Windows: PE（Portable Executable）
+* Linux: ELF（Executable Linkable Format）\
+
+目标文件（.o）和可执行文件的格式几乎是一样的：
+
+* Windows：统称为 PE-COFF 文件格式
+* Linux：ELF 文件
+
+其他文件格式：Intel/Microsoft 的 OMF（Object Module Format），Unix 的 a.out，MS-DOS 的 COM
+
+* 动态链接库（.so, .dll） 和静态链接库（.a, .lib） 都按照可执行文件的格式存储。
+* 静态链接库可以看成由多个目标文件+索引组成的压缩包
+
+![ELF文件的类型](elf-format-table.png)
+
+`file` 命令查看可执行文件的格式
+
+## 目标文件的内容
+
+* 分成多个节（Section）/ 段（Segment）
+* 内容：
+  0. 文件头（ELF头）
+  1. 编译后的机器指令——*代码段， .text, .code*
+  2. 全局变量、静态变量——*数据段, .data*
+  3. 未初始化的全局变量——*.bss*
+  4. 其他信息——*符号表、调试信息、字符串……*
+
+为什么要分段？
+
+* 给每个段单独赋予权限（代码段只读）
+* 共享（共一个程序的多个进程——共享代码段）
+
+> Windows 工具：Process Explorer
+
+## objdump 查看目标文件的内容
+
+```bash
+luo@luo ~/a> objdump -h ./SimpleSection.o 
+
+./SimpleSection.o：     文件格式 elf64-x86-64
+
+节：
+Idx Name          Size      VMA               LMA               File off  Algn
+  0 .text         00000010  0000000000000000  0000000000000000  00000040  2**4
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  1 .data         00000004  0000000000000000  0000000000000000  00000050  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  2 .bss          00000004  0000000000000000  0000000000000000  00000054  2**2
+                  ALLOC
+  3 .rodata.str1.1 00000004  0000000000000000  0000000000000000  00000054  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .text.startup 00000018  0000000000000000  0000000000000000  00000060  2**4
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
+  5 .comment      00000013  0000000000000000  0000000000000000  00000078  2**0
+                  CONTENTS, READONLY
+  6 .note.GNU-stack 00000000  0000000000000000  0000000000000000  0000008b  2**0
+                  CONTENTS, READONLY
+  7 .note.gnu.property 00000030  0000000000000000  0000000000000000  00000090  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  8 .eh_frame     00000048  0000000000000000  0000000000000000  000000c0  2**3
+                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
+```
+
+* `-h` 选项显示文件头的内容，包含了各个段的基本信息
+* 第二行代表段的属性，`CONTENTS` 表示这个段是否会出现在 ELF 可执行文件中
+* ELF 文件中比较重要的段：`.text`, `.data`, `.rodata`, `.comment`
+* `size` 命令，查看 ELF 文件代码段、数据段、bss 段长度：
+
+  ```bash
+  luo@luo ~/a> size SimpleSection.o 
+   text    data     bss     dec     hex filename
+    164       4       4     172      ac SimpleSection.o
+  ```
+
+### 代码段
+
+* `objdump -s`：十六进制显示段的内容
+* `objdump -d`：反汇编代码段
+
+```
+luo@luo ~/a> objdump -sd ./SimpleSection.o 
+
+./SimpleSection.o：     文件格式 elf64-x86-64
+
+Contents of section .text:
+ 0000 89fe31c0 488d3d00 000000e9 00000000  ..1.H.=.........
+Contents of section .data:
+ 0000 54000000                             T...            
+……
+Disassembly of section .text:
+
+0000000000000000 <func1>:
+   0:   89 fe                   mov    %edi,%esi
+   2:   31 c0                   xor    %eax,%eax
+   4:   48 8d 3d 00 00 00 00    lea    0x0(%rip),%rdi        # b <func1+0xb>
+   b:   e9 00 00 00 00          jmp    10 <func1+0x10>
+……
+```
+
+## 数据段、只读数据段
+
+* `.data`：已初始化的全局变量、静态变量
+* `.rodata`：const 修饰的全局、静态变量、字符串常量
+  * 有的编译器也会将字符串存放到 `.rodata` 段里（MSVC）
+
+## BSS 段
+
+* 并不真的占据 ELF 文件的空间
+* 只是给未初始化的全局变量、局部变量预留一个段
+* 静态变量、全局变量初始化为0，会被认为是未初始化的，被放到 .bss 段
+
+```c
+// a.c
+int a = 0;
+static int b = 0;
+```
+
+查看ELF文件：
+
+```bash
+objdump -h ./b.o
+
+./b.o：     文件格式 elf64-x86-64
+
+节：
+Idx Name          Size      VMA               LMA               File off  Algn
+  0 .text         00000000  0000000000000000  0000000000000000  00000040  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data         00000000  0000000000000000  0000000000000000  00000040  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  2 .bss          00000004  0000000000000000  0000000000000000  00000040  2**2
+                  ALLOC
+  3 .comment      00000013  0000000000000000  0000000000000000  00000040  2**0
+                  CONTENTS, READONLY
+  4 .note.GNU-stack 00000000  0000000000000000  0000000000000000  00000053  2**0
+                  CONTENTS, READONLY
+  5 .note.gnu.property 00000030  0000000000000000  0000000000000000  00000058  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+```
+
+`.data` 的大小为0，`.bss` 大小为4字节
+
+## 二进制文件 -> 目标文件的一个段
+
+`objcopy`：
+
+```bash
+luo@luo ~/a> objcopy -I binary  -O elf64-x86-64 ~/Pictures/1.jpg ./picture.o
+luo@luo ~/a> objdump -ht ./picture.o 
+
+./picture.o：     文件格式 elf64-x86-64
+
+节：
+Idx Name          Size      VMA               LMA               File off  Algn
+  0 .data         00234e69  0000000000000000  0000000000000000  00000040  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+SYMBOL TABLE:
+0000000000000000 g       .data  0000000000000000 _binary__home_luo_Pictures_1_jpg_start
+0000000000234e69 g       .data  0000000000000000 _binary__home_luo_Pictures_1_jpg_end
+0000000000234e69 g       *ABS*  0000000000000000 _binary__home_luo_Pictures_1_jpg_size
+```
+
+## 自定义段
+
+GCC 拓展：`__attribute((section("seg_name")))`：
+
+```c
+__attribute__((section("FOO"))) int var1 = 12;
+__attribute__((section("BAR"))) int func1 (int a) {  return a; }
+```
+
+ELF 文件里多了两个段：FOO、BAR
+
+```bash
+objdump -h ./seg_custom.o 
+
+./seg_custom.o：     文件格式 elf64-x86-64
+
+节：
+Idx Name          Size      VMA               LMA               File off  Algn
+ ……
+  3 FOO           00000004  0000000000000000  0000000000000000  00000040  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 BAR           0000000c  0000000000000000  0000000000000000  00000044  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ ……
+```
+
+## ELF 文件结构
+
+* **ELF 文件头** + **各个段**
+* ELF 中最重要的结构：段表
+
+## 查看文件头
+
+```
+readelf -h ./SimpleSection.o
+```
+
+* ELF 文件头的结构和相关常数：elf.h，包含在 glibc-dev 或者 linux-header 中。
+* 对应的结构体：`Elf64_Ehdr`, `Elf32_Ehdr`，各个字段的大小不同，结构相同
+
+```c
+typedef struct
+{
+  unsigned char	e_ident[EI_NIDENT];	/* Magic number and other info */
+  Elf64_Half	e_type;			/* Object file type */
+  Elf64_Half	e_machine;		/* Architecture */
+  Elf64_Word	e_version;		/* Object file version */
+  Elf64_Addr	e_entry;		/* Entry point virtual address */
+  Elf64_Off	e_phoff;		    /* Program header table file offset */
+  Elf64_Off	e_shoff;		    /* Section header table file offset */
+  Elf64_Word	e_flags;		/* Processor-specific flags */
+  Elf64_Half	e_ehsize;		/* ELF header size in bytes */
+  Elf64_Half	e_phentsize;	/* Program header table entry size */
+  Elf64_Half	e_phnum;		/* Program header table entry count */
+  Elf64_Half	e_shentsize;	/* Section header table entry size */
+  Elf64_Half	e_shnum;		/* Section header table entry count */
+  Elf64_Half	e_shstrndx;		/* Section header string table index */
+} Elf64_Ehdr;
+```
+
+文件头 Magic Number：
+
+```
+// 第 1 个字节 0x7f
+#define EI_MAG0		0		/* File identification byte 0 index */
+#define ELFMAG0		0x7f		/* Magic number byte 0 */
+
+// 第 2, 3, 4 个字节：ELF 的 ASCII
+#define EI_MAG1		1		/* File identification byte 1 index */
+#define ELFMAG1		'E'		/* Magic number byte 1 */
+
+#define EI_MAG2		2		/* File identification byte 2 index */
+#define ELFMAG2		'L'		/* Magic number byte 2 */
+
+#define EI_MAG3		3		/* File identification byte 3 index */
+#define ELFMAG3		'F'		/* Magic number byte 3 */
+
+// 第 5 个字节 ELF 文件类
+#define EI_CLASS	4		/* File class byte index */
+#define ELFCLASSNONE	0   /* Invalid class */
+#define ELFCLASS32	1		/* 32-bit objects */
+#define ELFCLASS64	2		/* 64-bit objects */
+#define ELFCLASSNUM	3
+
+// 第 6 个字节：字节序
+#define EI_DATA		5		/* Data encoding byte index */
+#define ELFDATANONE	0		/* Invalid data encoding */
+#define ELFDATA2LSB	1		/* 2's complement, little endian */
+#define ELFDATA2MSB	2		/* 2's complement, big endian */
+#define ELFDATANUM	3
+
+// 第 7 个字节：ELF 版本
+#define EI_VERSION	6		/* File version byte index */
+
+// 剩下的预留，还没有被定义
+```
+
+随便 hexdump 一个目标文件，看前几个字节：
+
+```bash
+hexdump --color -C ./cpp_sym_fix.o
+00000000  7f 45 4c 46 02 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|
+00000010  01 00 3e 00 01 00 00 00  00 00 00 00 00 00 00 00  |..>.............|
+```
+
+操作系统会检查 ELF 的 Magic Number，来决定是否可以载入运行
+
+## 段表
+
+* 段表 = 段描述符数组
+* 在 ELF header 中相关的字段：
+  
+  ```c
+  typedef struct
+  {
+    // ...
+    Elf64_Off	e_shoff;		/* Section header table file offset */
+    Elf64_Half	e_shentsize;	/* Section header table entry size */
+    Elf64_Half	e_shnum;		/* Section header table entry count */
+    // ...
+  } Elf64_Ehdr;
+  ```
+* 查看段表：
+  1. `objdump -h`：只能看到关键的段
+  2. `readelf -S`：查看所有的段
+
+  ```bash
+  luo@luo ~/a> readelf -S ./SimpleSection.o
+  There are 16 section headers, starting at offset 0x350:
+  
+  节头：
+    [号] 名称              类型             地址              偏移量
+         大小              全体大小          旗标   链接   信息   对齐
+    [ 0]                   NULL             0000000000000000  00000000
+         0000000000000000  0000000000000000           0     0     0
+    [ 1] .text             PROGBITS         0000000000000000  00000040
+         0000000000000010  0000000000000000  AX       0     0     16
+    [ 2] .rela.text        RELA             0000000000000000  00000248
+         0000000000000030  0000000000000018   I      13     1     8
+    [ 3] .data             PROGBITS         0000000000000000  00000050
+         0000000000000004  0000000000000000  WA       0     0     4
+  ……
+  ```
 
