@@ -934,3 +934,66 @@ typedef struct
 
 * builtins 的子项目，通过统一的接口处理不同平台的目标文件
 * GCC（汇编器 GAS、GNU Assembler）、连接器 ld、gdb 使用 BFD 库来处理目标文件，而不是直接操作
+
+# 第五章  Windows PE / COFF
+
+Windows 的二进制文件格式：
+
+* COFF：主要用在目标文件
+* PE：可执行文件，设计上可以兼任各种平台、CPU，但 Windows 的 PC
+  只支持 x86
+
+PE 是 COFF 的拓展，结构和 PE 大致相同，甚至和 ELF 同源；PE+：64 位的 PE，扩大了每个字段的大小
+
+* 段名：代码段：`.code`，数据段 `.data`
+  （似乎 DOS 的 x86 汇编就遵循这种命名？）
+* 自定义段：`#pragma` 编译器提示：
+
+  ```c
+  #pragma data_seg("FOO")
+  int global = 1;   // global 放到段 FOO 中
+  #pragma data_seg(".data") // 后面变量恢复到 `.data`
+  ```
+
+## 编译链接
+
+* 命令行工具：VS Command Prompt
+  1. 编译器：cl——`cl /c /zA SimpleSection.c`
+     * `/c`：只编译、不链接
+     * `/zA`：禁用 Visual C++ 的专有拓展，与标准的 C/C++ 兼容
+       * 使用 /zA 选项 --> 生成 `__STDC__`宏
+  2. 连接器：link.exe
+  3. 可执行查看器：dumpbin——`dumpbin /ALL SimpleSection.obj > SimpleSection.txt`
+     * `/ALL`：打印所有信息、文件头、每个段的属性、内容、符号表
+     * `/SUMMARY`：只输出段名和长度
+
+## COFF 文件结构
+
+COFF = 文件头 + 若干段 + 符号表 + 调试信息等
+
+文件头包含两个部分：
+
+1. 映像头（ImageHeader）：表述文件总体结构和属性
+   * `IMAGE_FILE_HEADER` 结构体（ELF的 Elf32_Ehdr）
+2. 段表（Section Table）：描述各个段的属性
+   * `IMAGE_SECTION_HEADER` 数组
+
+**映像** PE 在装载是直接映射到进程的虚拟空间中运行，进程的虚拟空间映像
+
+![COFF-struct](coff-struct.png)
+
+特有的段：
+
+* `.drectve`：传递给链接器的命令行选项
+* `.debug$S`：调试信息
+
+## PE
+
+* 文件的开始不是 COFF 文件头、而是 DOS MZ 可执行文件格式的文件头和桩代码 （DOS MZ File Header and Stub）
+  * 在 DOS 下可以将 PE 看成 MZ 可执行文件，DOS 下运行 PE 会执行桩代码，打印错误消息并退出
+* COFF 文件头中的 IMAGE_FILE_HEADER 拓展成了 IMAGE_NT_HEADER
+
+![](pe-file-struct.png)
+
+** PE 数据目录** 用来查找装载需要的数据结构——`IMAGE_OPTIONAL_HEADER` 结构的 `DataDirectory`
+成员，一个 `IMAGE_DATA_DIRECTORY` 数组
