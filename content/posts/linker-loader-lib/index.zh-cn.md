@@ -808,3 +808,62 @@ typedef struct
   3. `_edata` / `edata`：数据段结束地址
   4. `_end` / `end`：程序的结束地址
 
+  直接使用符号：
+
+  ```c
+  #include <stdio.h>
+
+  extern void *__executable_start;
+  extern void *__etext;
+  extern void *_etext;
+  extern void *etext;
+  extern void *_edata;
+  extern void *edata;
+  extern void *_end;
+  extern void *end;
+
+  int main(void)
+  {
+      printf("executable start: %p\n", __executable_start);
+      printf("end of code seg: %p, %p, %p\n", __etext, _etext, etext);
+      printf("end of data seg: %p, %p\n", _edata, edata);
+      printf("executable end: %p, %p\n", _end, end);
+
+      return 0;
+  }
+  ```
+
+## 符号修饰
+
+目的：防止命名冲突
+
+* C：
+  * MSVC：在符号名称前加 `_`
+  * GCC：不修饰
+* C++：
+  * 在符号前添加函数签名、命名空间等信息
+  * 防止符号修饰：`extern "C"`
+  * 解析修饰后的名称：
+    * gcc：`c++filt`
+    * MSVC：`UnDecorateSymbolName()`
+
+## 强符号、弱符号
+
+* 强符号：重复定义链接时报错
+* 弱符号：重复定义不报错，使用占用空间最大的符号
+  * 会引发难以察觉的错误
+* 已经初始化的全局符号：强符号，没有初始化：弱符号
+* GNU 拓展声明弱符号 `__attribute((weak))`
+
+## 强引用、弱引用
+
+* 强引用：没有找到符号定义——*报错*
+* 弱引用：没有找到符号定义——*将符号设置成0*
+  * 应用：检查 runtime
+  * 声明弱引用：GNU 拓展：`__attribute((weakref))`
+
+## 调试信息
+
+* 编译时使用 `-g` 选项
+* `readelf` 可以看到很多 `.debug` 开头的段
+* 目标文件中打包了源码、行号、符号类型等信息，甚至可以查看 STL 内部的结构
