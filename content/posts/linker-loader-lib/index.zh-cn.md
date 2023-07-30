@@ -1024,7 +1024,7 @@ COFF = 文件头 + 若干段 + 符号表 + 调试信息等
     * windows 上叫做虚拟段（Virtual Section）
     * 当发生段错误时，可以根据这个数据结构查找页面在可执行文件的位置
 * 设置 CPU 的寄存器，跳转到可执行文件的入口地址，启动运行
-  * 内核栈和用户栈之间的切换
+  * 内核栈和用户栈之间的切换、CPU执行切换
 
 ## 页错误
 
@@ -1035,5 +1035,72 @@ COFF = 文件头 + 若干段 + 符号表 + 调试信息等
 
 ![page_err](page_err.png)
 
-## 进行虚拟内存空间分布
+## 进程虚拟内存空间分布
+
+### ELF 文件的链接视图和执行视图
+
+* 一个可执行文件往往有多个段，每个段的位置和大小需要与页面对齐——*浪费空间*
+* 对于操作系统来说，根据段（Section）属性进行区分（读、写、执行）
+* 引入 Segment 的概念，将多个属性类似的 Section 合并在一起，一起映射，一起使用同一个 VMA。本质：在装载的时候重新划分 ELF 的段
+  * 查看可执行文件的段（Section）
+    
+    ```bash
+    readelf -S ./a.out
+    ```
+  
+  * 查看可执行文件在装载时划分的段（Segment）:
+
+  ```bash
+  readelf -l ./a.out
+  ``` 
+
+  需要关心的是 `Program Headers` 里 Type 为 LOAD 的 segment，只有它们会被映射
+* 从 Section 的角度看 ELF 文件：链接视图、从 Segment 的角度看 ELF 文件、执行视图
+* 表示 Segment 的数据结构：程序头表（Program Header Tanle），只存在与 ELF 可执行文件和共享库文件中（需要被加载）：
+
+  ```c
+  typedef struct
+  {
+    Elf32_Word	p_type;			/* Segment type */
+    Elf32_Off	p_offset;		  /* Segment file offset */
+    Elf32_Addr	p_vaddr;		/* Segment virtual address */
+    Elf32_Addr	p_paddr;		/* Segment physical address */
+    Elf32_Word	p_filesz;		/* Segment size in file */
+    Elf32_Word	p_memsz;		/* Segment size in memory */
+    Elf32_Word	p_flags;		/* Segment flags */
+    Elf32_Word	p_align;		/* Segment alignment */
+  } Elf32_Phdr;
+  ```
+
+## 堆、栈
+
+* 进程的堆和栈也是通过 VMA 来管理
+* 查看进程的虚拟空间分布
+
+  ```bash
+  $ cat /proc/[进程号]/maps
+    # ...
+    7f903ee3a000-7f903ee3c000 r--p 00031000 00:1b 19017012                   /nix/
+          │ store/ayg065nw0xi1zsyi8glfh5pn4sfqd8xg-glibc-2.37-8/lib/ld-linux-x86-64.so.2
+    175   │ 7f903ee3c000-7f903ee3e000 rw-p 00033000 00:1b 19017012                   /nix/
+          │ store/ayg065nw0xi1zsyi8glfh5pn4sfqd8xg-glibc-2.37-8/lib/ld-linux-x86-64.so.2
+    176   │ 7ffca5b0e000-7ffca5b30000 rw-p 00000000 00:00 0                          [stac
+          │ k]
+    177   │ 7ffca5bd5000-7ffca5bd9000 r--p 00000000 00:00 0                          [vvar
+          │ ]
+    178   │ 7ffca5bd9000-7ffca5bdb000 r-xp 00000000 00:00 0                          [vdso
+          │ ]
+    179   │ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsys
+          │ call]
+  ```
+
+    * 第一列：VMA 地址范围
+    * 第二列：VMA 的权限
+    * 第三列：VMA 对应的 Segmen 在镜像文件中的偏移
+    * 第四列：映像文件所在设备的主设备和从设备、其中0代表 Segment 没有被映射到文件中（虚拟内存区域（Anonymous Virtual Memory Area））
+    * 第五列：映像文件的节点号
+    * 第六列：映像文件的路径
+
+  * `[heap]` 堆、`[stack]` 栈、`[vdso]` 位于内核空间、一个内核模块，通过这个 VMA 可以黑内核进行通信
+
 
