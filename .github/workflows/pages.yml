@@ -9,7 +9,7 @@ jobs:
   pages:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
         with:
           submodules: true
       - name: Use Node.js 12.x
@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: '12.22.7'
       - name: Cache NPM dependencies
-        uses: actions/cache@v2
+        uses: actions/setup-node@v4
         with:
           path: node_modules
           key: ${{ runner.OS }}-npm-cache
